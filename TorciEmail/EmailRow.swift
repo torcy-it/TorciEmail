@@ -7,7 +7,7 @@
 import SwiftUI
 
 
-struct EmailRowView: View {
+struct EmailRow: View {
     let email: EmailItem
 
     var body: some View {
@@ -75,7 +75,7 @@ struct EmailRowView: View {
     }
     
     private func eventIcon(_ eventItem: EmailEventItem) -> some View {
-        let color = eventItem.event.tint(for: eventItem.state)
+        let color = eventItem.event.tint(for: eventItem.state).opacity( 0.80)
         let iconName = eventItem.event.symbolName(for: eventItem.state)
         
         return Image(iconName)
@@ -88,5 +88,5 @@ struct EmailRowView: View {
 }
 
 #Preview {
-    ContentView()
+    MailboxView()
 }
