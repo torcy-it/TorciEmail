@@ -1,16 +1,30 @@
-//
-//  SelectRow.swift
-//  TorciEmail
-//
-//  Created by Adolfo Torcicollo on 21/01/26.
-//
-
-
 import SwiftUI
 
+struct SelectRow: Identifiable, Hashable {
+    let id = UUID()
+    let icon: String          // SF Symbol name
+    let title: String
+}
 
-struct EmailView: View {
+enum CardStyle {
+    case flat
+}
 
+struct CategoriesView: View {
+
+
+    private let certified: [SelectRow] = [
+        .init(icon: "envelope", title: "EviMail"),
+        .init(icon: "doc.text", title: "EviNotice"),
+        .init(icon: "message", title: "EviSms"),
+        .init(icon: "tray.and.arrow.up", title: "EviPost"),
+        .init(icon: "signature", title: "EviSign")
+    ]
+
+    private let typeOf: [SelectRow] = [
+        .init(icon: "envelope", title: "My EviMail"),
+        .init(icon: "tray.full", title: "My Evimail Batches")
+    ]
 
     // Selection
     @State private var selectedCertifiedTitle: String = "EviMail"
@@ -20,16 +34,23 @@ struct EmailView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 28) {
-
-                SectionHeader("Certified Communication")
+                
+                Text("Certified Communication")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.leading, 4)
                     .padding(.top, 48)
+
 
                 SelectCard(
                     rows: certified,
                     selectedTitle: $selectedCertifiedTitle
                 )
 
-                SectionHeader("Type of")
+                Text("Type of")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.leading, 4)
 
                 SelectCard(
                     rows: typeOf,
@@ -50,7 +71,7 @@ struct EmailView: View {
                             .foregroundColor(.black)
                             .font(.system(size: 16.58, weight: .medium))
                             .frame(width: 48, height: 48)
-                            .glassEffect(.regular.tint(Color("ButtonColor").opacity(0.80)))
+                            .glassEffect(.regular.tint(Color("PrimaryColor").opacity(0.80)))
                             .shadow(
                                 color: .black.opacity(0.25),
                                 radius: 2,
@@ -69,17 +90,7 @@ struct EmailView: View {
 }
 
 
-private struct SectionHeader: View {
-    let title: String
-    init(_ title: String) { self.title = title }
 
-    var body: some View {
-        Text(title)
-            .font(.system(size: 22, weight: .semibold))
-            .foregroundStyle(.primary)
-            .padding(.leading, 4)
-    }
-}
 
 private struct SelectCard: View {
     let rows: [SelectRow]
@@ -106,7 +117,7 @@ private struct SelectCard: View {
                         if selectedTitle == row.title {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Color(red: 153/255, green: 196/255, blue: 193/255))
+                                .foregroundStyle(Color("StrongPrimaryColor"))
                         }
                     }
                     .padding(.vertical, 18)
@@ -136,6 +147,6 @@ private struct SelectCard: View {
 
 
 #Preview {
-    EmailView( showModal: .constant(true))
+    CategoriesView( showModal: .constant(true))
     
 }

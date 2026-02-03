@@ -28,7 +28,7 @@ struct CertificateEmailView: View {
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button{
-                        showDetailsModal.toggle()
+                        showEmailInfoModal.toggle()
                         
                     } label : {
                         Text(Image(systemName: "checkmark"))

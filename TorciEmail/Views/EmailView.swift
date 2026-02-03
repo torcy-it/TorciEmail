@@ -12,7 +12,7 @@ struct EmailView: View {
     @Environment(\.dismiss) var dismiss
     let email: EmailItem
     @State private var showDetailsModal = false
-    @State private var showCertificatesModal = false
+    @State private var showEmailInfoModal = false
 
     var body: some View {
         ScrollView {
@@ -44,7 +44,7 @@ struct EmailView: View {
 
             ToolbarItem(placement: .bottomBar) {
                 Button("Certificates Details", systemImage: "checkmark.seal.text.page") {
-                    showCertificatesModal.toggle()
+                    showEmailInfoModal.toggle()
                 }
             }
 
@@ -56,10 +56,10 @@ struct EmailView: View {
         }
         .modifier(ScrollEdgeTuning())
         .sheet(isPresented: $showDetailsModal) {
-            DetailsEmailView(showDetailsModal: $showDetailsModal, email: email)
+            DetailsEmailView(showDetailsModal: $showDetailsModal)
         }
-        .sheet(isPresented: $showCertificatesModal) {
-            CertificateEmailView(showCertificatesModal: $showCertificatesModal, email: email)
+        .sheet(isPresented: $showEmailInfoModal) {
+            CertificateEmailView(showEmailInfoModal: $showEmailInfoModal)
         }
     }
 

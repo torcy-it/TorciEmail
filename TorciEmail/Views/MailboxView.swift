@@ -27,7 +27,7 @@ struct MailboxView: View {
                                 } else {
                                     ForEach(vm.searchedEmails) { email in
                                         NavigationLink(value: email) {
-                                            EmailRowView(email: email)
+                                            EmailRow(email: email)
                                                 .padding(.horizontal)
                                         }
                                         .buttonStyle(.plain)

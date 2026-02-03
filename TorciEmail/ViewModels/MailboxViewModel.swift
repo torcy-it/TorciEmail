@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @MainActor
 final class MailboxViewModel: ObservableObject {
@@ -13,7 +14,7 @@ final class MailboxViewModel: ObservableObject {
     @Published var showModal = false
 
     // Data
-    @Published var emails: [EmailItem] = EmailItem.mockInbox // per ora mock
+    @Published var emails: [EmailItem] =  [] // per ora mock
 
     // MARK: - Derived lists
 

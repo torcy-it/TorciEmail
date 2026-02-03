@@ -5,11 +5,12 @@
 //  Created by Adolfo Torcicollo on 16/11/25.
 //
 
-
 import SwiftUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
+    @StateObject private var viewModel = AuthViewModel()
+    @State private var showLogoutConfirmation = false
     
     var body: some View {
         ZStack {
@@ -36,6 +37,30 @@ struct ProfileView: View {
                     .foregroundColor(.white.opacity(0.7))
                 
                 Spacer()
+                
+                // Pulsante Logout
+                Button {
+                    showLogoutConfirmation = true
+                } label: {
+                    HStack {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Logout")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red.opacity(0.8))
+                    .foregroundColor(.white)
+                    .cornerRadius(14)
+                    .font(.system(size: 18, weight: .semibold))
+                }
+                .disabled(viewModel.isLoading)
+                .padding(.horizontal)
+                .padding(.bottom, 40)
             }
             .padding(.top, 60)
         }
@@ -54,6 +79,21 @@ struct ProfileView: View {
                     .foregroundColor(.white)
                 }
             }
+        }
+        .confirmationDialog(
+            "Sei sicuro di voler uscire?",
+            isPresented: $showLogoutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Logout", role: .destructive) {
+                Task {
+                    await viewModel.logout()
+                }
+            }
+            Button("Annulla", role: .cancel) {}
+        }
+        .fullScreenCover(isPresented: .constant(!viewModel.isAuthenticated && viewModel.email.isEmpty)) {
+            LoginPageView()
         }
     }
 }
