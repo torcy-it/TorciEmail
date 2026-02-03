@@ -74,7 +74,7 @@ struct EmailRow: View {
             .font(.system(size: 18, weight: .regular))
     }
     
-    private func eventIcon(_ eventItem: EmailEventItem) -> some View {
+    private func eventIcon(_ eventItem: EmailEvent) -> some View {
         let color = eventItem.event.tint(for: eventItem.state).opacity( 0.80)
         let iconName = eventItem.event.symbolName(for: eventItem.state)
         

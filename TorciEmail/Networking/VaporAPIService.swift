@@ -28,8 +28,8 @@ enum APIError: LocalizedError {
                 return "Errore \(code): \(message)"
             }
             return "Errore HTTP \(code)"
-        case .decodingError:
-            return "Errore nella decodifica dei dati"
+        case .decodingError(let error):
+            return "Errore nella decodifica dei dati: \(error.localizedDescription)"
         case .networkError:
             return "Errore di connessione. Verifica la tua rete."
         }
@@ -62,6 +62,8 @@ class VaporAPIService {
         self.authToken = response.token
         KeychainManager.shared.saveToken(response.token)
         
+        print("✅ Login successful, token saved")
+        
         return response.token
     }
     
@@ -75,6 +77,8 @@ class VaporAPIService {
         // Rimuovi token
         self.authToken = nil
         KeychainManager.shared.deleteToken()
+        
+        print("✅ Logout successful, token removed")
     }
     
     var isAuthenticated: Bool {
@@ -85,18 +89,31 @@ class VaporAPIService {
     
     func queryEviMails(limit: Int = 100, offset: Int? = nil) async throws -> EviMailQueryResponse {
         let request = EviMailQueryRequest(limit: limit, offset: offset)
-        return try await post(
+        
+        print("📤 Querying EviMails - limit: \(limit), offset: \(offset ?? 0)")
+        
+        let response: EviMailQueryResponse = try await post(
             endpoint: "/evimails/query",
             body: request,
             requiresAuth: true
         )
+        
+        print("📥 Received \(response.results.count) emails (total: \(response.totalMatches))")
+        
+        return response
     }
     
     func getEviMail(id: String) async throws -> EviMail {
-        return try await get(
+        print("📤 Fetching EviMail with ID: \(id)")
+        
+        let email: EviMail = try await get(
             endpoint: "/evimails/\(id)",
             requiresAuth: true
         )
+        
+        print("📥 Received EviMail: \(email.subject ?? "No subject")")
+        
+        return email
     }
     
     // MARK: - Generic HTTP Methods
@@ -160,12 +177,15 @@ class VaporAPIService {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
+            print("❌ Network error: \(error)")
             throw APIError.networkError(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
+        
+        print("📡 Response status: \(httpResponse.statusCode)")
         
         // Gestione errori HTTP
         guard (200...299).contains(httpResponse.statusCode) else {
@@ -187,11 +207,12 @@ class VaporAPIService {
         
         do {
             let decoder = JSONDecoder()
-            return try decoder.decode(R.self, from: data)
+            let result = try decoder.decode(R.self, from: data)
+            return result
         } catch {
-            print("Decoding error: \(error)")
+            print("❌ Decoding error: \(error)")
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response JSON: \(jsonString)")
+                print("📄 Response JSON: \(jsonString)")
             }
             throw APIError.decodingError(error)
         }

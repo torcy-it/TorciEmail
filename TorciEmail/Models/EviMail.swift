@@ -6,7 +6,7 @@
 //
 
 
-struct EviMail: Codable {
+struct EviMail: Codable, Hashable {
     let uniqueId: String?
     let issuer: Contact?
     let recipient: Contact?
@@ -43,12 +43,12 @@ struct EviMail: Codable {
     let siteName: String?
 }
 
-struct Contact: Codable {
+struct Contact: Codable , Hashable{
     let legalName: String?
     let emailAddress: String
 }
 
-struct CarbonCopyRecipient: Codable {
+struct CarbonCopyRecipient: Codable, Hashable {
     let name: String
     let emailAddress: String
 }
