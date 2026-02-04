@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 enum APIError: LocalizedError {
     case invalidURL
@@ -20,7 +21,7 @@ enum APIError: LocalizedError {
         case .invalidURL:
             return "URL non valido"
         case .unauthorized:
-            return "Credenziali non valide. Riprova."
+            return "Sessione scaduta. Effettua nuovamente il login."
         case .invalidResponse:
             return "Risposta del server non valida"
         case .httpError(let code, let message):
@@ -36,16 +37,21 @@ enum APIError: LocalizedError {
     }
 }
 
-class VaporAPIService {
+class VaporAPIService: ObservableObject {
     static let shared = VaporAPIService()
     
     private let baseURL: String
     private(set) var authToken: String?
     
+    @Published var sessionExpired: Bool = false
+    
     private init(baseURL: String = "http://localhost:8080") {
         self.baseURL = baseURL
-        // Carica token salvato se esiste
         self.authToken = KeychainManager.shared.getToken()
+    }
+    
+    var isAuthenticated: Bool {
+        return authToken != nil
     }
     
     // MARK: - Authentication
@@ -58,11 +64,10 @@ class VaporAPIService {
             requiresAuth: false
         )
         
-        // Salva token
         self.authToken = response.token
         KeychainManager.shared.saveToken(response.token)
         
-        print("✅ Login successful, token saved")
+        print("Login successful, token saved")
         
         return response.token
     }
@@ -74,49 +79,45 @@ class VaporAPIService {
             requiresAuth: true
         )
         
-        // Rimuovi token
-        self.authToken = nil
-        KeychainManager.shared.deleteToken()
-        
-        print("✅ Logout successful, token removed")
+        clearAuth()
+        print("Logout successful")
     }
     
-    var isAuthenticated: Bool {
-        return authToken != nil
+    func clearAuth() {
+        self.authToken = nil
+        KeychainManager.shared.deleteToken()
     }
     
     // MARK: - EviMails
     
-    func queryEviMails(limit: Int = 100, offset: Int? = nil) async throws -> EviMailQueryResponse {
-        let request = EviMailQueryRequest(limit: limit, offset: offset)
-        
-        print("📤 Querying EviMails - limit: \(limit), offset: \(offset ?? 0)")
+    func queryAllEviMails() async throws -> EviMailQueryResponse {
+        print("Querying ALL EviMails")
         
         let response: EviMailQueryResponse = try await post(
-            endpoint: "/evimails/query",
-            body: request,
+            endpoint: "/evimails/query-all",
+            body: EmptyBody(),
             requiresAuth: true
         )
         
-        print("📥 Received \(response.results.count) emails (total: \(response.totalMatches))")
+        print("Received \(response.results.count) emails")
         
         return response
     }
     
     func getEviMail(id: String) async throws -> EviMail {
-        print("📤 Fetching EviMail with ID: \(id)")
+        print("Fetching EviMail: \(id)")
         
         let email: EviMail = try await get(
             endpoint: "/evimails/\(id)",
             requiresAuth: true
         )
         
-        print("📥 Received EviMail: \(email.subject ?? "No subject")")
+        print("Received EviMail")
         
         return email
     }
     
-    // MARK: - Generic HTTP Methods
+    // MARK: - HTTP Methods
     
     private func post<T: Encodable, R: Decodable>(
         endpoint: String,
@@ -129,8 +130,7 @@ class VaporAPIService {
             requiresAuth: requiresAuth
         )
         
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(body)
+        request.httpBody = try JSONEncoder().encode(body)
         
         return try await performRequest(request)
     }
@@ -177,7 +177,7 @@ class VaporAPIService {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            print("❌ Network error: \(error)")
+            print("Network error: \(error)")
             throw APIError.networkError(error)
         }
         
@@ -185,20 +185,21 @@ class VaporAPIService {
             throw APIError.invalidResponse
         }
         
-        print("📡 Response status: \(httpResponse.statusCode)")
+        print("Status: \(httpResponse.statusCode)")
         
-        // Gestione errori HTTP
         guard (200...299).contains(httpResponse.statusCode) else {
-            // Prova a decodificare messaggio di errore
-            let errorMessage = try? JSONDecoder().decode(ErrorResponse.self, from: data)
-            
             if httpResponse.statusCode == 401 {
-                // Token scaduto o non valido
-                self.authToken = nil
-                KeychainManager.shared.deleteToken()
+                print("401 Unauthorized - Token expired")
+                
+    
+                await MainActor.run {
+                    self.sessionExpired = true
+                }
+                
                 throw APIError.unauthorized
             }
             
+            let errorMessage = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw APIError.httpError(
                 statusCode: httpResponse.statusCode,
                 message: errorMessage?.reason
@@ -206,13 +207,11 @@ class VaporAPIService {
         }
         
         do {
-            let decoder = JSONDecoder()
-            let result = try decoder.decode(R.self, from: data)
-            return result
+            return try JSONDecoder().decode(R.self, from: data)
         } catch {
-            print("❌ Decoding error: \(error)")
+            print("Decoding error: \(error)")
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("📄 Response JSON: \(jsonString)")
+                print("Response: \(jsonString)")
             }
             throw APIError.decodingError(error)
         }

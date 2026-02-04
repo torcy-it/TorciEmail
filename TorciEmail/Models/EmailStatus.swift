@@ -9,7 +9,7 @@ import SwiftUI
 
 enum EmailStatus: Hashable {
     case new, ready, sent, dispatched, delivered
-    case read, replied, accepted, expired
+    case read, draft, submitted, expired, replied
     case failed, closed
     
     var isFinal: Bool {
@@ -23,45 +23,31 @@ enum EmailStatus: Hashable {
     
     var title: String {
         switch self {
-        case .new: return "New"
-        case .ready: return "Ready"
-        case .sent: return "Sent"
-        case .dispatched: return "Dispatched"
-        case .delivered: return "Delivered"
-        case .read: return "Read"
-        case .replied: return "Replied"
-        case .accepted: return "Accepted"
-        case .expired: return "Expired"
-        case .failed: return "Failed"
-        case .closed: return "Closed"
+        case .replied: return "REPLIED"
+        case .new: return "PENDING"
+        case .ready: return "READY"
+        case .sent: return "SENT"
+        case .dispatched: return "DISPATCHED"
+        case .delivered: return "DELIVERED"
+        case .read: return "READ"
+        case .submitted: return "SUBMITTED"
+        case .failed: return "FAILED"
+        case .expired: return "CLOSED"
+        case .closed: return "CLOSED"
+        case .draft: return "DRAFT"
         }
     }
     
     var badgeBackground: Color {
         switch self {
-        case .new:
-            return .blue
-        case .ready:
-            return .cyan
-        case .sent:
-            return .orange
-        case .dispatched:
-            return .yellow
-        case .delivered:
-            return .green
-        case .read:
-            return .teal
-        case .replied:
-            return .purple
-        case .accepted:
-            return .mint
-        case .expired:
+        case .new, .dispatched, .expired, .closed, .draft:
             return .gray
+        case .ready, .sent, .delivered, .read, .replied, .submitted:
+            return .mint
         case .failed:
             return .red
-        case .closed:
-            return .secondary
         }
     }
+
 }
 

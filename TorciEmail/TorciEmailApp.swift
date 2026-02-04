@@ -9,15 +9,12 @@ import SwiftUI
 
 @main
 struct TorciEmailApp: App {
-    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var authViewModel = AuthViewModel.shared
     
     var body: some Scene {
         WindowGroup {
-            if authViewModel.isAuthenticated {
-                MailboxView()
-            } else {
-                LoginPageView()
-            }
+            RootView()
+                .environmentObject(authViewModel)
         }
     }
 }

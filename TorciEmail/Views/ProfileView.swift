@@ -9,17 +9,17 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
-    @StateObject private var viewModel = AuthViewModel()
+    @EnvironmentObject var authVm: AuthViewModel
     @State private var showLogoutConfirmation = false
     
     var body: some View {
         ZStack {
-            Color(red: 17/255, green: 24/255, blue: 39/255)
-                .ignoresSafeArea()
+//            Color(red: 17/255, green: 24/255, blue: 39/255)
+//                .ignoresSafeArea()
             
             VStack(spacing: 20) {
                 // Avatar grande
-                Image("avatar")
+                Image("watermelon")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 120, height: 120)
@@ -29,12 +29,9 @@ struct ProfileView: View {
                     )
                     .shadow(radius: 10)
                 
-                Text("Profile")
+                Text(String(authVm.username.prefix { $0 != "@" }))
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Text("Il tuo profilo qui")
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(.black)
                 
                 Spacer()
                 
@@ -43,7 +40,7 @@ struct ProfileView: View {
                     showLogoutConfirmation = true
                 } label: {
                     HStack {
-                        if viewModel.isLoading {
+                        if authVm.isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         } else {
@@ -58,11 +55,36 @@ struct ProfileView: View {
                     .cornerRadius(14)
                     .font(.system(size: 18, weight: .semibold))
                 }
-                .disabled(viewModel.isLoading)
+                .disabled(authVm.isLoading)
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
             .padding(.top, 60)
+        
+            if showLogoutConfirmation {
+                CustomAlert(
+                    title: "Logout",
+                    message: "Sei sicuro di voler uscire?",
+                    primaryButton: AlertButton(
+                        title: "Logout",
+                        style: .destructive,
+                        action: {
+                            showLogoutConfirmation = false
+                            Task {
+                                await authVm.logout()
+                            }
+                        }
+                    ),
+                    secondaryButton: AlertButton(
+                        title: "Annulla",
+                        style: .cancel,
+                        action: {
+                            showLogoutConfirmation = false
+                        }
+                    )
+                )
+                .zIndex(999)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -74,26 +96,11 @@ struct ProfileView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 17, weight: .semibold))
-                        Text("Back")
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                 }
             }
         }
-        .confirmationDialog(
-            "Sei sicuro di voler uscire?",
-            isPresented: $showLogoutConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Logout", role: .destructive) {
-                Task {
-                    await viewModel.logout()
-                }
-            }
-            Button("Annulla", role: .cancel) {}
-        }
-        .fullScreenCover(isPresented: .constant(!viewModel.isAuthenticated && viewModel.email.isEmpty)) {
-            LoginPageView()
-        }
+
     }
 }

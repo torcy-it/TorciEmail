@@ -25,12 +25,6 @@ final class MailboxViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    // Pagination
-    private var currentOffset = 0
-    private let pageSize = 50
-    private var hasMorePages = true
-    private var totalMatches = 0
-    
     private let apiService = VaporAPIService.shared
     
     // MARK: - Init
@@ -39,37 +33,30 @@ final class MailboxViewModel: ObservableObject {
         print("📬 MailboxViewModel initialized")
         // Carica le email all'avvio
         Task {
-            await loadInitialEmails()
+            await loadAllEmails()
         }
     }
 
     // MARK: - Data Loading
     
-    func loadInitialEmails() async {
+    func loadAllEmails() async {
         guard !isLoading else {
             print("⚠️ Already loading, skipping...")
             return
         }
         
-        print("📬 Loading initial emails...")
+        print("📬 Loading ALL emails...")
         
         isLoading = true
         errorMessage = nil
-        currentOffset = 0
-        hasMorePages = true
         
         do {
-            let response = try await apiService.queryEviMails(limit: pageSize, offset: 0)
-            
-            totalMatches = response.totalMatches
-            hasMorePages = response.results.count < response.totalMatches
-            currentOffset = response.results.count
+            let response = try await apiService.queryAllEviMails()
             
             // Converti EviMail in EmailItem
             emails = response.results.map { EviMailMapper.map($0) }
             
-            print("✅ Loaded \(emails.count) emails (total: \(totalMatches))")
-            print("📊 Has more pages: \(hasMorePages)")
+            print("✅ Loaded ALL \(emails.count) emails (total: \(response.totalMatches))")
         } catch let error as APIError {
             errorMessage = error.errorDescription
             print("❌ Failed to load emails: \(error.errorDescription ?? "Unknown error")")
@@ -81,69 +68,61 @@ final class MailboxViewModel: ObservableObject {
         isLoading = false
     }
     
-    func loadMoreEmails() async {
-        guard !isLoading, hasMorePages else {
-            if !hasMorePages {
-                print("ℹ️ No more pages to load")
-            }
+    func refreshEmails() async {
+        guard !isLoading else {
+            print("Already loading, skipping refresh...")
             return
         }
         
-        print("📬 Loading more emails from offset \(currentOffset)...")
+        print("Refreshing emails...")
         
         isLoading = true
+        errorMessage = nil
         
         do {
-            let response = try await apiService.queryEviMails(
-                limit: pageSize,
-                offset: currentOffset
-            )
-            
-            hasMorePages = (currentOffset + response.results.count) < totalMatches
-            currentOffset += response.results.count
-            
-            // Aggiungi le nuove email
-            let newEmails = response.results.map { EviMailMapper.map($0) }
-            emails.append(contentsOf: newEmails)
-            
-            print("✅ Loaded \(newEmails.count) more emails (total: \(emails.count)/\(totalMatches))")
-            print("📊 Has more pages: \(hasMorePages)")
+            let response = try await apiService.queryAllEviMails()
+            emails = response.results.map { EviMailMapper.map($0) }
+            print("Refreshed \(emails.count) emails")
         } catch let error as APIError {
             errorMessage = error.errorDescription
-            print("❌ Failed to load more emails: \(error.errorDescription ?? "Unknown error")")
+            print("Failed to refresh: \(error.errorDescription ?? "Unknown error")")
         } catch {
-            errorMessage = "Errore nel caricamento"
-            print("❌ Failed to load more emails: \(error)")
+            errorMessage = "Errore nel refresh delle email"
+            print("Failed to refresh: \(error)")
         }
         
         isLoading = false
-    }
-    
-    func refreshEmails() async {
-        print("🔄 Refreshing emails...")
-        await loadInitialEmails()
     }
 
     // MARK: - Derived lists
 
     var filteredEmails: [EmailItem] {
+        let filtered: [EmailItem]
+        
         switch selectedFilters {
         case "Sent":
-            return emails.filter { $0.status == .sent }
+            filtered = emails.filter { $0.status == .sent }
         case "Delivered":
-            return emails.filter { $0.status == .delivered }
+            filtered = emails.filter { $0.status == .delivered }
         case "Failed":
-            return emails.filter { $0.status == .failed }
+            filtered = emails.filter { $0.status == .failed }
         case "Actives":
-            return emails.filter { !$0.status.isFinal }
+            filtered = emails.filter { !$0.status.isFinal }
         case "Drafts":
-            return emails.filter { $0.status == .ready }
+            filtered = emails.filter { $0.status == .ready }
         case "Closed":
-            return emails.filter { $0.status == .closed }
+            filtered = emails.filter { $0.status == .closed }
         case "All Inbox":
-            return emails
+            filtered = emails
         default:
-            return emails
+            filtered = emails
+        }
+        
+        // Ordina per ultimo evento (più recenti prima)
+        return filtered.sorted { email1, email2 in
+            guard let date1 = email1.lastEventDate else { return false }
+            guard let date2 = email2.lastEventDate else { return true }
+            return date1 > date2
         }
     }
 

@@ -5,12 +5,12 @@
 //  Created by Adolfo Torcicollo on 23/01/26.
 //
 
-
 import SwiftUI
 
 struct MailboxView: View {
 
-    @StateObject private var vm = MailboxViewModel()
+    @StateObject private var mailVm = MailboxViewModel()
+    @EnvironmentObject var authVm: AuthViewModel
 
     var body: some View {
         NavigationStack {
@@ -22,10 +22,21 @@ struct MailboxView: View {
                             header
 
                             VStack(spacing: 14) {
-                                if vm.searchedEmails.isEmpty {
+                                // Loading state
+                                if mailVm.isLoading && mailVm.emails.isEmpty {
+                                    loadingView
+                                }
+                                // Error state
+                                else if let errorMessage = mailVm.errorMessage, mailVm.emails.isEmpty {
+                                    errorView(errorMessage)
+                                }
+                                // Empty state
+                                else if mailVm.searchedEmails.isEmpty {
                                     emptyState
-                                } else {
-                                    ForEach(vm.searchedEmails) { email in
+                                }
+                                // Email list
+                                else {
+                                    ForEach(mailVm.searchedEmails) { email in
                                         NavigationLink(value: email) {
                                             EmailRow(email: email)
                                                 .padding(.horizontal)
@@ -42,23 +53,30 @@ struct MailboxView: View {
                         .padding(.top, 8)
                     }
                     .scrollDismissesKeyboard(.interactively)
+                    .refreshable {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask {
+                                await mailVm.refreshEmails()
+                            }
+                        }
+                    }
                 }
                 .toolbar { toolbar }
                 .searchable(
-                    text: $vm.searchText,
-                    isPresented: $vm.isSearchPresented,
+                    text: $mailVm.searchText,
+                    isPresented: $mailVm.isSearchPresented,
                     placement: .navigationBarDrawer(displayMode: .always),
                     prompt: "Search emails"
                 )
                 .modifier(ScrollEdgeTuning())
-                .sheet(isPresented: $vm.showModal) {
-                    CategoriesView(showModal: $vm.showModal)
+                .sheet(isPresented: $mailVm.showModal) {
+                    CategoriesView(showModal: $mailVm.showModal)
                 }
 
                 filtersOverlay
             }
             .onPreferenceChange(ButtonFrameKey.self) { value in
-                vm.filtersButtonFrame = value
+                mailVm.filtersButtonFrame = value
             }
         }
     }
@@ -72,17 +90,17 @@ struct MailboxView: View {
                     .foregroundColor(.black)
                     .font(.system(size: 40, weight: .semibold))
 
-                Text("Update Just Now")
+                Text(updateText)
                     .foregroundColor(.black.opacity(0.5))
                     .font(.system(size: 16))
             }
 
             Spacer()
 
-            FiltersButton(showMenu: $vm.showFiltersMenu, selectedFilter: $vm.selectedFilters)
-                .disabled(vm.isScrolled)
-                .allowsHitTesting(!vm.isScrolled)
-                .opacity(vm.isScrolled ? 0.5 : 1)
+            FiltersButton(showMenu: $mailVm.showFiltersMenu, selectedFilter: $mailVm.selectedFilters)
+                .disabled(mailVm.isScrolled)
+                .allowsHitTesting(!mailVm.isScrolled)
+                .opacity(mailVm.isScrolled ? 0.5 : 1)
                 .background(
                     GeometryReader { proxy in
                         Color.clear.preference(
@@ -99,10 +117,67 @@ struct MailboxView: View {
                 let offset = geo.frame(in: .global).minY
                 Color.clear
                     .onChange(of: offset) { _, newValue in
-                        vm.setScrolledOffset(newValue)
+                        mailVm.setScrolledOffset(newValue)
                     }
             }
         )
+    }
+    
+    private var updateText: String {
+        if mailVm.isLoading {
+            return "Loading..."
+        }
+        return "Update Just Now"
+    }
+
+    // MARK: - Loading View
+    
+    private var loadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(1.2)
+            
+            Text("Loading emails...")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.gray)
+        }
+        .padding(.top, 60)
+    }
+    
+    // MARK: - Error View
+    
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 50))
+                .foregroundColor(.orange)
+            
+            Text("Error loading emails")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Text(message)
+                .font(.system(size: 14))
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            Button {
+                Task {
+                    await mailVm.refreshEmails()
+                }
+            } label: {
+                Text("Retry")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+            }
+            .padding(.top, 8)
+        }
+        .padding(.top, 60)
     }
 
     // MARK: - Empty state
@@ -132,8 +207,30 @@ struct MailboxView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-            ProfileButton()
-                .buttonStyle(.plain)
+            NavigationLink(destination: ProfileView()) {
+                VStack(spacing: 4) {
+                    Image("watermelon")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 48)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                        .shadow(
+                            color: .black.opacity(0.25),
+                            radius: 2,
+                            x: 0,
+                            y: 4
+                        )
+                    
+                    Text(String(authVm.username.prefix { $0 != "@" }))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.black.opacity(0.7))
+                        .lineLimit(1)
+                }
+            }
+            .buttonStyle(.plain)
         }
         .sharedBackgroundVisibility(.hidden)
 
@@ -151,7 +248,7 @@ struct MailboxView: View {
 
         ToolbarItem(placement: .bottomBar) {
             Button {
-                vm.showModal.toggle()
+                mailVm.showModal.toggle()
             } label: {
                 Image(systemName: "rectangle.3.group.bubble")
             }
@@ -162,25 +259,25 @@ struct MailboxView: View {
 
     @ViewBuilder
     private var filtersOverlay: some View {
-        if vm.showFiltersMenu {
+        if mailVm.showFiltersMenu {
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
                 .allowsHitTesting(true)
-                .onTapGesture { vm.dismissFiltersMenu() }
+                .onTapGesture { mailVm.dismissFiltersMenu() }
                 .transition(.opacity)
                 .zIndex(10)
 
             FiltersMenu(
-                selectedFilters: $vm.selectedFilters,
-                showMenu: $vm.showFiltersMenu
+                selectedFilters: $mailVm.selectedFilters,
+                showMenu: $mailVm.showFiltersMenu
             )
             .offset(
-                x: vm.filtersButtonFrame.minX - 10,
-                y: vm.filtersButtonFrame.maxY + 84
+                x: mailVm.filtersButtonFrame.minX - 10,
+                y: mailVm.filtersButtonFrame.maxY + 84
             )
-            .scaleEffect(vm.showFiltersMenu ? 1 : 0.95, anchor: .top)
-            .opacity(vm.showFiltersMenu ? 1 : 0)
-            .animation(.spring(response: 0.6, dampingFraction: 0.5), value: vm.showFiltersMenu)
+            .scaleEffect(mailVm.showFiltersMenu ? 1 : 0.95, anchor: .top)
+            .opacity(mailVm.showFiltersMenu ? 1 : 0)
+            .animation(.spring(response: 0.6, dampingFraction: 0.5), value: mailVm.showFiltersMenu)
             .zIndex(20)
         }
     }

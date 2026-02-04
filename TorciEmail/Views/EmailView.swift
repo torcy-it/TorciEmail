@@ -280,30 +280,3 @@ private func bodyText(for email: EmailItem) -> String {
 }
 
 
-
-#Preview {
-    EmailView(email: EmailItem(
-        senderName: "Recipient Name",
-        emailObject: "Object of the email",
-        emailDescription: """
-In Middle earth, the Rings of Power were forged.
-Three were given to the Elves ancient, wise, and undying.
-Seven to the Dwarf-lords, masters of stone and craft.
-And nine to Mortal Men, doomed to fade.
-""",
-        date: "12/03/25",
-        status: .new,
-        events: [
-            .init(event: .sent, state: .sent(.sent), timestampUTC: Date()),
-            .init(event: .open, state: .open(.opened), timestampUTC: Date()),
-            .init(event: .decision, state: .decision(.waiting), timestampUTC: Date())
-        ],
-        attachments: [
-            .init(name: "Certificate.pdf", sizeLabel: "1.2 MB", kind: .pdf),
-            .init(name: "Photo_0123.jpg", sizeLabel: "820 KB", kind: .image),
-            .init(name: "Report.docx", sizeLabel: "340 KB", kind: .doc),
-            .init(name: "Export.zip", sizeLabel: "5.1 MB", kind: .zip)
-        ]
-    ))
-}
-

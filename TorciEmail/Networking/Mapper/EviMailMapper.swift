@@ -11,7 +11,6 @@ struct EviMailMapper {
     
     /// Converte EviMail (dal server) in EmailItem (modello UI)
     static func map(_ eviMail: EviMail) -> EmailItem {
-        // Sender name - priorità: issuer.legalName > from > emailAddress > "Unknown"
         let senderName: String = {
             if let legalName = eviMail.issuer?.legalName, !legalName.isEmpty {
                 return legalName
@@ -29,8 +28,9 @@ struct EviMailMapper {
         let body = eviMail.body ?? ""
         let date = formatDate(eviMail.creationDate)
         let status = mapStatus(eviMail.state)
+        let eventStatus = mapEventStatus(eviMail)  // 3 icone fisse
         let events = mapEvents(eviMail)
-        let attachments: [EmailAttachment] = [] // TODO: se il server invia attachments
+        let attachments: [EmailAttachment] = []
         
         return EmailItem(
             id: eviMail.uniqueId ?? UUID().uuidString,
@@ -39,6 +39,7 @@ struct EviMailMapper {
             emailDescription: body,
             date: date,
             status: status,
+            eventStatus: eventStatus,
             events: events,
             attachments: attachments
         )
@@ -55,101 +56,180 @@ struct EviMailMapper {
         case "dispatched": return .dispatched
         case "delivered": return .delivered
         case "read": return .read
+        case "draft": return .draft
+        case "submitted": return .submitted
         case "replied": return .replied
-        case "accepted": return .accepted
         case "expired": return .expired
         case "failed": return .failed
         case "closed": return .closed
         default: return .new
         }
+
     }
     
-    /// Crea gli eventi dalla timeline dell'email
+    ///Crea array eventi dettagliati (per timeline futura)
     private static func mapEvents(_ eviMail: EviMail) -> [EmailEvent] {
         var events: [EmailEvent] = []
         
-        // New/Created
-        if let creationDate = eviMail.creationDate, let date = parseDate(creationDate) {
+        // PREPARATION
+        if let newOn = eviMail.newOn, let date = parseDate(newOn) {
             events.append(EmailEvent(
-                event: .sent,
-                state: .sent(.sent),
+                event: .preparation,
+                state: .preparation(.pending),
                 timestampUTC: date
             ))
         }
         
-        // Ready
         if let readyOn = eviMail.readyOn, let date = parseDate(readyOn) {
             events.append(EmailEvent(
-                event: .sent,
-                state: .sent(.sent),
+                event: .preparation,
+                state: .preparation(.ready),
                 timestampUTC: date
             ))
         }
         
-        // Sent
+        // SENDING
         if let sentOn = eviMail.sentOn, let date = parseDate(sentOn) {
             events.append(EmailEvent(
-                event: .sent,
-                state: .sent(.sent),
+                event: .sending,
+                state: .sending(.sent),
                 timestampUTC: date
             ))
         }
         
-        // Dispatched
         if let dispatchedOn = eviMail.dispatchedOn, let date = parseDate(dispatchedOn) {
             events.append(EmailEvent(
-                event: .sent,
-                state: .sent(.dispatched),
+                event: .sending,
+                state: .sending(.dispatched),
                 timestampUTC: date
             ))
         }
         
-        // Delivered
         if let deliveredOn = eviMail.deliveredOn, let date = parseDate(deliveredOn) {
             events.append(EmailEvent(
-                event: .sent,
-                state: .sent(.delivered),
+                event: .sending,
+                state: .sending(.delivered),
                 timestampUTC: date
             ))
         }
         
-        // Read/Open
+        if eviMail.xmissionResult == false,
+           let failedDate = eviMail.lastStateChangeDate,
+           let date = parseDate(failedDate) {
+            events.append(EmailEvent(
+                event: .sending,
+                state: .sending(.failed),
+                timestampUTC: date
+            ))
+        }
+        
+        // DELIVERY (waiting for open)
+        if let deliveredOn = eviMail.deliveredOn,
+           eviMail.readOn == nil,
+           let date = parseDate(deliveredOn) {
+            let waitingDate = date.addingTimeInterval(1)
+            events.append(EmailEvent(
+                event: .delivery,
+                state: .delivery(.waiting),
+                timestampUTC: waitingDate
+            ))
+        }
+        
+        // READING
         if let readOn = eviMail.readOn, let date = parseDate(readOn) {
             events.append(EmailEvent(
-                event: .open,
-                state: .open(.opened),
+                event: .reading,
+                state: .reading(.opened),
                 timestampUTC: date
             ))
         }
         
-        // Replied
-        if let repliedOn = eviMail.repliedOn, let date = parseDate(repliedOn) {
-            events.append(EmailEvent(
-                event: .decision,
-                state: .decision(.accepted),
-                timestampUTC: date
-            ))
-        }
-        
-        // Accepted
+        // DECISION
         if let acceptedOn = eviMail.acceptedOn, let date = parseDate(acceptedOn) {
             events.append(EmailEvent(
                 event: .decision,
-                state: .decision(.accepted),
+                state: .decision(.contentAccepted),
                 timestampUTC: date
             ))
-        }
-        
-        // Expired
-        if let expiredOn = eviMail.expiredOn, let date = parseDate(expiredOn) {
+        } else if let repliedOn = eviMail.repliedOn, let date = parseDate(repliedOn) {
             events.append(EmailEvent(
                 event: .decision,
-                state: .decision(.waiting),
+                state: .decision(.contentAccepted),
                 timestampUTC: date
+            ))
+        } else if eviMail.state?.lowercased() == "closed",
+                  let outcome = eviMail.outcome?.lowercased(),
+                  outcome.contains("reject") || outcome.contains("refused"),
+                  let closedDate = eviMail.lastStateChangeDate,
+                  let date = parseDate(closedDate) {
+            events.append(EmailEvent(
+                event: .decision,
+                state: .decision(.contentRejected),
+                timestampUTC: date
+            ))
+        } else if let expiredOn = eviMail.expiredOn, let date = parseDate(expiredOn) {
+            events.append(EmailEvent(
+                event: .decision,
+                state: .decision(.expired),
+                timestampUTC: date
+            ))
+        } else if let readOn = eviMail.readOn,
+                  eviMail.acceptedOn == nil,
+                  eviMail.repliedOn == nil,
+                  eviMail.expiredOn == nil,
+                  let date = parseDate(readOn) {
+            let waitingDate = date.addingTimeInterval(1)
+            events.append(EmailEvent(
+                event: .decision,
+                state: .decision(.waitingDecision),
+                timestampUTC: waitingDate
             ))
         }
         
         return events.sorted { $0.timestampUTC < $1.timestampUTC }
+    }
+    
+    /// Determina lo stato dei 3 eventi fissi (per le 3 icone)
+    private static func mapEventStatus(_ eviMail: EviMail) -> EmailEventStatus {
+        // 1. STATO INVIO
+        let sendingStatus: SendingStatus = {
+            if eviMail.xmissionResult == false {
+                return .failed
+            }
+            if eviMail.deliveredOn != nil || eviMail.dispatchedOn != nil || eviMail.sentOn != nil {
+                return .sent
+            }
+            return .waiting
+        }()
+        
+        // 2. STATO LETTURA
+        let readingStatus: ReadingStatus = {
+            if eviMail.readOn != nil {
+                return .opened
+            }
+            return .waiting
+        }()
+        
+        // 3. STATO CONTENUTO
+        let contentStatus: ContentStatus = {
+            if eviMail.acceptedOn != nil || eviMail.repliedOn != nil {
+                return .accepted
+            }
+            if let outcome = eviMail.outcome?.lowercased(),
+               outcome.contains("reject") || outcome.contains("refused") {
+                return .rejected
+            }
+            if eviMail.expiredOn != nil {
+                return .rejected
+            }
+            return .waiting
+        }()
+        
+        return EmailEventStatus(
+            sendingStatus: sendingStatus,
+            readingStatus: readingStatus,
+            contentStatus: contentStatus
+        )
     }
     
     /// Formatta la data per la UI (es. "12/03/25")
@@ -166,7 +246,6 @@ struct EviMailMapper {
     
     /// Parse ISO8601 date string
     private static func parseDate(_ dateString: String) -> Date? {
-        // Prima prova con fractional seconds
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
@@ -174,13 +253,11 @@ struct EviMailMapper {
             return date
         }
         
-        // Fallback senza fractional seconds
         formatter.formatOptions = [.withInternetDateTime]
         if let date = formatter.date(from: dateString) {
             return date
         }
         
-        // Fallback con DateFormatter per altri formati
         let fallbackFormatter = DateFormatter()
         fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ"
         fallbackFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -189,7 +266,6 @@ struct EviMailMapper {
             return date
         }
         
-        // Ultimo tentativo senza millisecondi
         fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
         return fallbackFormatter.date(from: dateString)
     }

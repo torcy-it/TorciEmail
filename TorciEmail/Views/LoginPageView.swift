@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct LoginPageView: View {
-    @StateObject private var viewModel = AuthViewModel()
-
+    @EnvironmentObject var authViewModel: AuthViewModel
+    
     var body: some View {
         VStack(spacing: 70) {
             
@@ -24,37 +24,36 @@ struct LoginPageView: View {
             }
             
             VStack(spacing: 39) {
-                TextField("Your Email", text: $viewModel.email)
+                TextField("Your Email", text: $authViewModel.username)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
-                    .disabled(viewModel.isLoading)
-
-                SecureField("Your Password", text: $viewModel.password)
+                    .disabled(authViewModel.isLoading)
+                
+                SecureField("Your Password", text: $authViewModel.password)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
-                    .disabled(viewModel.isLoading)
+                    .disabled(authViewModel.isLoading)
             }
             
-            // Messaggio di errore
-            if let errorMessage = viewModel.errorMessage {
+            if let errorMessage = authViewModel.errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .font(.system(size: 14))
                     .multilineTextAlignment(.center)
             }
-
+            
             Button {
                 Task {
-                    await viewModel.login()
+                    await authViewModel.login()
                 }
             } label: {
                 HStack {
-                    if viewModel.isLoading {
+                    if authViewModel.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .black))
                     } else {
@@ -68,15 +67,15 @@ struct LoginPageView: View {
                 .cornerRadius(14)
                 .font(Font.system(size: 18, weight: .semibold))
             }
-            .disabled(viewModel.email.isEmpty || viewModel.password.isEmpty || viewModel.isLoading)
-
+            .disabled(authViewModel.username.isEmpty || authViewModel.password.isEmpty || authViewModel.isLoading)
+            
             Spacer()
         }
         .padding()
-        .fullScreenCover(isPresented: $viewModel.isAuthenticated) {
-            MailboxView()
-        }
     }
 }
 
-#Preview { LoginPageView() }
+#Preview {
+    LoginPageView()
+        .environmentObject(AuthViewModel.shared)
+}

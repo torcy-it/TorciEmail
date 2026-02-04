@@ -41,14 +41,8 @@ struct EmailRow: View {
                         .padding(.trailing, 4)
      
 
+                    EmailEventsView(eventStatus: email.eventStatus)
                     
-                    HStack(spacing: 4) {
-                        ForEach(email.events, id: \.event) { eventItem in
-                            eventIcon(eventItem)
-                        }
-                    }
-                    
-
                     Text(email.status.title)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
@@ -58,6 +52,7 @@ struct EmailRow: View {
                                 .fill(email.status.badgeBackground)
                                 .opacity(0.30)
                         )
+                    
                 }
                 .fixedSize(horizontal: true, vertical: false)  // Non comprimere la parte destra
             }
@@ -76,7 +71,7 @@ struct EmailRow: View {
     
     private func eventIcon(_ eventItem: EmailEvent) -> some View {
         let color = eventItem.event.tint(for: eventItem.state).opacity( 0.80)
-        let iconName = eventItem.event.symbolName(for: eventItem.state)
+        let iconName = eventItem.event.assetName(for: eventItem.state)
         
         return Image(iconName)
             .renderingMode(.template)
