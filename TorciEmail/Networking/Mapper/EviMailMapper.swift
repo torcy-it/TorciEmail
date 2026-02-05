@@ -11,37 +11,45 @@ struct EviMailMapper {
     
     /// Converte EviMail (dal server) in EmailItem (modello UI)
     static func map(_ eviMail: EviMail) -> EmailItem {
-        let senderName: String = {
-            if let legalName = eviMail.issuer?.legalName, !legalName.isEmpty {
-                return legalName
-            }
-            if let from = eviMail.from, !from.isEmpty {
-                return from
-            }
-            if let email = eviMail.issuer?.emailAddress {
-                return email
-            }
-            return "Unknown Sender"
-        }()
-        
-        let subject = eviMail.subject ?? "No Subject"
-        let body = eviMail.body ?? ""
-        let date = formatDate(eviMail.creationDate)
         let status = mapStatus(eviMail.state)
-        let eventStatus = mapEventStatus(eviMail)  // 3 icone fisse
+        let eventStatus = mapEventStatus(eviMail)
         let events = mapEvents(eviMail)
-        let attachments: [EmailAttachment] = []
+        
+        // Formatta la data per la lista (usa l'ultima data disponibile)
+        let displayDate = formatDate(eviMail.lastStateChangeDate)
         
         return EmailItem(
             id: eviMail.uniqueId ?? UUID().uuidString,
-            senderName: senderName,
-            emailObject: subject,
-            emailDescription: body,
-            date: date,
+            senderName: eviMail.issuer?.legalName ?? "Unknown",
+            senderEmail: eviMail.issuer?.emailAddress ?? "",
+            recipientName: eviMail.recipient?.legalName ?? "Unknown",
+            recipientEmail: eviMail.recipient?.emailAddress ?? "",
+            carbonCopy: eviMail.carbonCopy ?? [],
+            emailObject: eviMail.subject ?? "No Subject",
+            emailDescription: eviMail.body ?? "",
+            date: displayDate,
             status: status,
             eventStatus: eventStatus,
             events: events,
-            attachments: attachments
+            attachments: [],  // TODO: map attachments when available
+            sourceChannel: eviMail.sourceChannel,
+            creationDate: formatDetailDate(eviMail.creationDate),
+            admissionDate: formatDetailDate(eviMail.readyOn),
+            dispatchedDate: formatDetailDate(eviMail.dispatchedOn),
+            openedDate: formatDetailDate(eviMail.readOn),
+            repliedDate: formatDetailDate(eviMail.repliedOn),
+            expirationDate: formatDetailDate(eviMail.expiredOn),
+            onlineRetentionPeriod: eviMail.onlineRetentionPeriod,
+            certificationLevel: eviMail.affidavitKinds ?? [],
+            language: "en",  // TODO: map from EviMail if available
+            aspect: "Certificato",
+            totalSize: nil,  // TODO: calculate from attachments
+            contentSize: eviMail.body?.count,
+            requiresCaptcha: false,  // TODO: map from EviMail if available
+            allowsAgreement: true,
+            commentsAllowed: true,
+            accessControl: nil,  // TODO: map from EviMail if available
+            signatureNotice: nil  // TODO: map from EviMail if available
         )
     }
     
@@ -233,6 +241,18 @@ struct EviMailMapper {
     }
     
     /// Formatta la data per la UI (es. "12/03/25")
+    private static func formatDetailDate(_ dateString: String?) -> String? {
+        guard let dateString = dateString,
+              let date = parseDate(dateString) else {
+            return nil
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: date)
+    }
+    
     private static func formatDate(_ dateString: String?) -> String {
         guard let dateString = dateString,
               let date = parseDate(dateString) else {
@@ -243,7 +263,6 @@ struct EviMailMapper {
         formatter.dateFormat = "dd/MM/yy"
         return formatter.string(from: date)
     }
-    
     /// Parse ISO8601 date string
     private static func parseDate(_ dateString: String) -> Date? {
         let formatter = ISO8601DateFormatter()

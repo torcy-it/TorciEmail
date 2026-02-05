@@ -9,9 +9,22 @@ import Foundation
 import SwiftUI
 
 struct EmailEvent: Hashable {
+    let id: UUID
     let event: EventType
     let state: EventState
     let timestampUTC: Date
+    
+    init(
+        id: UUID = UUID(),
+        event: EventType,
+        state: EventState,
+        timestampUTC: Date
+    ) {
+        self.id = id
+        self.event = event
+        self.state = state
+        self.timestampUTC = timestampUTC
+    }
 }
 
 enum EventType: Hashable {

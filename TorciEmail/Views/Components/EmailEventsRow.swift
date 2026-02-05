@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct EmailEventsView: View {
+struct EmailEventsRow: View {
     let eventStatus: EmailEventStatus
     
     var body: some View {
@@ -51,7 +51,7 @@ struct EventIconView: View {
 #Preview {
     VStack(spacing: 20) {
         Text("Idle - tutto in waiting")
-        EmailEventsView(eventStatus: EmailEventStatus(
+        EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .waiting,
             readingStatus: .waiting,
             contentStatus: .waiting
@@ -60,7 +60,7 @@ struct EventIconView: View {
         Divider()
         
         Text("Email inviata")
-        EmailEventsView(eventStatus: EmailEventStatus(
+        EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .waiting,
             contentStatus: .waiting
@@ -69,7 +69,7 @@ struct EventIconView: View {
         Divider()
         
         Text("Email vista")
-        EmailEventsView(eventStatus: EmailEventStatus(
+        EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .opened,
             contentStatus: .waiting
@@ -78,7 +78,7 @@ struct EventIconView: View {
         Divider()
         
         Text("Contenuto accettato")
-        EmailEventsView(eventStatus: EmailEventStatus(
+        EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .opened,
             contentStatus: .accepted
@@ -87,7 +87,7 @@ struct EventIconView: View {
         Divider()
         
         Text("Invio fallito")
-        EmailEventsView(eventStatus: EmailEventStatus(
+        EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .failed,
             readingStatus: .waiting,
             contentStatus: .waiting

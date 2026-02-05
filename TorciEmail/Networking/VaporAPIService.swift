@@ -42,12 +42,19 @@ class VaporAPIService: ObservableObject {
     
     private let baseURL: String
     private(set) var authToken: String?
+    private let urlSession: URLSession  // Aggiungi questa proprietà
     
     @Published var sessionExpired: Bool = false
     
     private init(baseURL: String = "http://localhost:8080") {
         self.baseURL = baseURL
         self.authToken = KeychainManager.shared.getToken()
+        
+        // Configura URLSession con timeout più lungo
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 60  // 60 secondi
+        configuration.timeoutIntervalForResource = 120  // 2 minuti
+        self.urlSession = URLSession(configuration: configuration)
     }
     
     var isAuthenticated: Bool {
@@ -175,7 +182,8 @@ class VaporAPIService: ObservableObject {
         let (data, response): (Data, URLResponse)
         
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            // Usa urlSession invece di URLSession.shared
+            (data, response) = try await urlSession.data(for: request)
         } catch {
             print("Network error: \(error)")
             throw APIError.networkError(error)

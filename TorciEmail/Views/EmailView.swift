@@ -12,7 +12,7 @@ struct EmailView: View {
     @Environment(\.dismiss) var dismiss
     let email: EmailItem
     @State private var showDetailsModal = false
-    @State private var showEmailInfoModal = false
+    @State private var showCertificatesModal = false
 
     var body: some View {
         ScrollView {
@@ -44,7 +44,7 @@ struct EmailView: View {
 
             ToolbarItem(placement: .bottomBar) {
                 Button("Certificates Details", systemImage: "checkmark.seal.text.page") {
-                    showEmailInfoModal.toggle()
+                    showCertificatesModal.toggle()
                 }
             }
 
@@ -56,10 +56,10 @@ struct EmailView: View {
         }
         .modifier(ScrollEdgeTuning())
         .sheet(isPresented: $showDetailsModal) {
-            DetailsEmailView(showDetailsModal: $showDetailsModal)
+            DetailsEmailModal(showDetailsModal: $showDetailsModal,email: email)
         }
-        .sheet(isPresented: $showEmailInfoModal) {
-            CertificateEmailView(showEmailInfoModal: $showEmailInfoModal)
+        .sheet(isPresented: $showCertificatesModal) {
+            CertificateEmailModal(showCertificatesModal: $showCertificatesModal, email: email)
         }
     }
 
@@ -84,7 +84,7 @@ struct EmailView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     infoRow(label: "To", value: recipientLine(for: email))
-                    infoRow(label: "Cc", value: "Carbon Copy")
+                    infoRow(label: "Cc", value: carbonCopyLine(for: email))
                 }
             }
         }
@@ -274,6 +274,12 @@ private func recipientLine(for email: EmailItem) -> String {
         .replacingOccurrences(of: " ", with: "")
     return "\(cleaned)@example.com"
 }
+
+private func carbonCopyLine(for email: EmailItem) -> String {
+    guard !email.carbonCopy.isEmpty else { return "n/d" }
+    return email.carbonCopyFormatted
+}
+
 
 private func bodyText(for email: EmailItem) -> String {
     email.emailDescription + "\n\n" + email.emailDescription

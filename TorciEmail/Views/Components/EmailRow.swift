@@ -41,7 +41,7 @@ struct EmailRow: View {
                         .padding(.trailing, 4)
      
 
-                    EmailEventsView(eventStatus: email.eventStatus)
+                    EmailEventsRow(eventStatus: email.eventStatus)
                     
                     Text(email.status.title)
                         .font(.system(size: 14, weight: .semibold))

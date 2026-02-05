@@ -54,13 +54,12 @@ struct MailboxView: View {
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .refreshable {
-                        await withTaskGroup(of: Void.self) { group in
-                            group.addTask {
-                                await mailVm.refreshEmails()
-                            }
+                        _ = Task {
+                            await mailVm.refreshEmails()
                         }
-                    }
-                }
+                        
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 secondi
+                    }                }
                 .toolbar { toolbar }
                 .searchable(
                     text: $mailVm.searchText,
