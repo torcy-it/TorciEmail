@@ -72,9 +72,9 @@ struct DetailsEmailModal: View {
                     DetailSection(title: "Certification") {
                         DetailRow(label: "Online Retention Period", value: email.retentionPeriodFormatted)
                         
-                        if !email.certificationLevel.isEmpty {
-                            DetailRow(label: "Certification Level", value: email.certificationLevelFormatted)
-                        }
+
+                        DetailRow(label: "Certification Level", value: email.certificationLevel ?? "Standard")
+                        
                         
                         DetailRow(label: "Affidavit Profile", value: "Content in creation and closing")
                         DetailRow(

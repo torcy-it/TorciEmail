@@ -30,7 +30,7 @@ final class MailboxViewModel: ObservableObject {
     // MARK: - Init
     
     init() {
-        print("📬 MailboxViewModel initialized")
+        print("MailboxViewModel initialized")
         // Carica le email all'avvio
         Task {
             await loadAllEmails()
@@ -109,7 +109,7 @@ final class MailboxViewModel: ObservableObject {
         case "Actives":
             filtered = emails.filter { !$0.status.isFinal }
         case "Drafts":
-            filtered = emails.filter { $0.status == .ready }
+            filtered = emails.filter { $0.status == .draft }
         case "Closed":
             filtered = emails.filter { $0.status == .closed }
         case "All Inbox":

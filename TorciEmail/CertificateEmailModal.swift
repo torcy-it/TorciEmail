@@ -87,7 +87,7 @@ struct CertificateEmailModal: View {
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                     
-                    Text(certificationProfile)
+                    Text(email.certificationLevel ?? "Standard")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -103,9 +103,9 @@ struct CertificateEmailModal: View {
             
             // Certificate Details
             VStack(spacing: 12) {
-                InfoRow(label: "Delivery Mode", value: deliveryMode)
-                InfoRow(label: "Expires", value: expirationFormatted)
-                InfoRow(label: "Evidence ID", value: email.id, isMonospace: true)
+                InfoRow(label: "Delivery Mode", value: email.sourceChannel ?? "Api")
+                InfoRow(label: "Expires", value: email.expirationDate ?? "N/D")
+                InfoRow(label: "Unique ID", value: email.id, isMonospace: true)
             }
         }
         .padding(20)
@@ -154,25 +154,7 @@ struct CertificateEmailModal: View {
         .padding(.vertical, 60)
     }
     
-    // MARK: - Computed Properties
-    
-    private var certificationProfile: String {
-        if !email.certificationLevel.isEmpty {
-            return email.certificationLevel.joined(separator: ", ")
-        }
-        return "Standard"
-    }
-    
-    private var deliveryMode: String {
-        email.sourceChannel ?? "Web"
-    }
-    
-    private var expirationFormatted: String {
-        guard let expiration = email.expirationDate else {
-            return "N/A"
-        }
-        return expiration
-    }
+
 }
 
 // MARK: - Info Row
@@ -525,6 +507,6 @@ struct DetailItem: View {
 #Preview {
     CertificateEmailModal(
         showCertificatesModal: .constant(true),
-        email: .example
+        email: .exampleAccepted
     )
 }

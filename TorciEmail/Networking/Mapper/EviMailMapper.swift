@@ -14,10 +14,15 @@ struct EviMailMapper {
         let status = mapStatus(eviMail.state)
         let eventStatus = mapEventStatus(eviMail)
         let events = mapEvents(eviMail)
+        let attachments = mapAttachments(eviMail.attachments)
+        let affidavits = eviMail.affidavits ?? []
         
         // Formatta la data per la lista (usa l'ultima data disponibile)
         let displayDate = formatDate(eviMail.lastStateChangeDate)
         
+        // Calcola totalSize sommando gli attachments
+        let totalSize = attachments.reduce(0) { $0 + ($1.size ?? 0) }
+        //print("\(eviMail.uniqueId) ---- \(eviMail.expiredOn)")
         return EmailItem(
             id: eviMail.uniqueId ?? UUID().uuidString,
             senderName: eviMail.issuer?.legalName ?? "Unknown",
@@ -31,7 +36,9 @@ struct EviMailMapper {
             status: status,
             eventStatus: eventStatus,
             events: events,
-            attachments: [],  // TODO: map attachments when available
+            attachments: attachments,
+            affidavits: affidavits,
+            certificationLevel: (eviMail.affidavitKinds ?? []).contains { $0.localizedCaseInsensitiveContains("advanced") } ? "Advanced" : "Standard",
             sourceChannel: eviMail.sourceChannel,
             creationDate: formatDetailDate(eviMail.creationDate),
             admissionDate: formatDetailDate(eviMail.readyOn),
@@ -40,17 +47,37 @@ struct EviMailMapper {
             repliedDate: formatDetailDate(eviMail.repliedOn),
             expirationDate: formatDetailDate(eviMail.expiredOn),
             onlineRetentionPeriod: eviMail.onlineRetentionPeriod,
-            certificationLevel: eviMail.affidavitKinds ?? [],
-            language: "en",  // TODO: map from EviMail if available
+            affidavitKinds: eviMail.affidavitKinds ?? [],
+            language: "en",
             aspect: "Certificato",
-            totalSize: nil,  // TODO: calculate from attachments
+            totalSize: totalSize > 0 ? totalSize : nil,
             contentSize: eviMail.body?.count,
-            requiresCaptcha: false,  // TODO: map from EviMail if available
+            requiresCaptcha: false,
             allowsAgreement: true,
             commentsAllowed: true,
-            accessControl: nil,  // TODO: map from EviMail if available
-            signatureNotice: nil  // TODO: map from EviMail if available
+            accessControl: nil,
+            signatureNotice: nil,
+            acceptOrRejectComments: eviMail.acceptOrRejectComments,
+            costCentre: eviMail.costCentre,
+            xmissionResult: eviMail.xmissionResult,
+            xmissionSummary: eviMail.xmissionSummary
         )
+    }
+    
+    private static func mapAttachments(_ apiAttachments: [EviMailAttachment]?) -> [EmailAttachment] {
+        guard let apiAttachments = apiAttachments else { return [] }
+        
+        return apiAttachments.map { attachment in
+            EmailAttachment(
+                id: attachment.uniqueId,
+                name: attachment.displayName,
+                filename: attachment.filename,
+                size: attachment.contentLength,
+                mimeType: attachment.mimeType,
+                hash: attachment.hash,
+                kind: EmailAttachment.Kind.from(mimeType: attachment.mimeType)
+            )
+        }
     }
     
     /// Mappa lo stato eCertia allo stato locale
@@ -64,18 +91,15 @@ struct EviMailMapper {
         case "dispatched": return .dispatched
         case "delivered": return .delivered
         case "read": return .read
-        case "draft": return .draft
-        case "submitted": return .submitted
         case "replied": return .replied
         case "expired": return .expired
         case "failed": return .failed
         case "closed": return .closed
         default: return .new
         }
-
     }
     
-    ///Crea array eventi dettagliati (per timeline futura)
+    /// Crea array eventi dettagliati (per timeline futura)
     private static func mapEvents(_ eviMail: EviMail) -> [EmailEvent] {
         var events: [EmailEvent] = []
         
@@ -240,19 +264,23 @@ struct EviMailMapper {
         )
     }
     
-    /// Formatta la data per la UI (es. "12/03/25")
+    /// Formatta la data per i dettagli (es. "12/03/2025 14:30:45")
     private static func formatDetailDate(_ dateString: String?) -> String? {
+        
         guard let dateString = dateString,
               let date = parseDate(dateString) else {
+            
             return nil
         }
         
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        
         return formatter.string(from: date)
     }
     
+    /// Formatta la data per la lista (es. "12/03/25")
     private static func formatDate(_ dateString: String?) -> String {
         guard let dateString = dateString,
               let date = parseDate(dateString) else {
@@ -263,6 +291,7 @@ struct EviMailMapper {
         formatter.dateFormat = "dd/MM/yy"
         return formatter.string(from: date)
     }
+    
     /// Parse ISO8601 date string
     private static func parseDate(_ dateString: String) -> Date? {
         let formatter = ISO8601DateFormatter()
