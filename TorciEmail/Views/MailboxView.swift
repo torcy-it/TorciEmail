@@ -45,6 +45,7 @@ struct MailboxView: View {
                                     }
                                     .navigationDestination(for: EmailItem.self) { email in
                                         EmailView(email: email)
+                                            .environmentObject(mailVm)
                                     }
                                 }
                             }

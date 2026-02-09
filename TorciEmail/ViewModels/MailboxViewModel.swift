@@ -97,6 +97,43 @@ final class MailboxViewModel: ObservableObject {
         
         isLoading = false
     }
+    
+    // MARK: - Get Single Email Details
+
+    /// Carica i dettagli completi di una singola email
+    /// - Parameter id: ID dell'email da caricare
+    /// - Returns: EmailItem con tutti i dettagli (attachments, affidavits, etc)
+    func getEmailDetails(id: String) async throws -> EmailItem {
+        print("Loading email details for ID: \(id)")
+        print("Loading email details for ID: \(id)")
+        print("ID type: \(type(of: id))")
+        print("ID length: \(id.count)")
+        print("ID value: [\(id)]")
+        
+        do {
+            let detailedEmail = try await repository.getEmail(id: id)
+            
+            // Aggiorna anche l'email nella lista se esiste
+            if let index = emails.firstIndex(where: { $0.id == id }) {
+                emails[index] = detailedEmail
+                print("Updated email in list with full details")
+            }
+            
+            print("Email details loaded successfully")
+            print("   - Attachments: \(detailedEmail.attachments.count)")
+            print("   - Affidavits: \(detailedEmail.affidavits.count)")
+            
+            return detailedEmail
+            
+        } catch let error as RepositoryError {
+            print("Failed to load email details: \(error.errorDescription ?? "Unknown")")
+            throw error
+        } catch {
+            print("Unexpected error: \(error)")
+            throw RepositoryError.unknown
+        }
+    }
+    
 
     // MARK: - Derived Lists (Filtering & Sorting)
 

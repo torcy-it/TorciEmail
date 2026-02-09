@@ -114,8 +114,13 @@ class VaporAPIService: ObservableObject {
     func getEviMail(id: String) async throws -> EviMail {
         print("Fetching EviMail: \(id)")
         
-        let email: EviMail = try await get(
-            endpoint: "/evimails/\(id)",
+        struct GetByIdRequest: Encodable {
+            let id: String
+        }
+        
+        let email: EviMail = try await post(
+            endpoint: "/evimails/get-by-id",
+            body: GetByIdRequest(id: id),
             requiresAuth: true
         )
         
@@ -250,7 +255,7 @@ extension VaporAPIService {
             requiresAuth: true
         )
         
-        print("✅ EviMail submitted: \(response.eviId)")
+        print("EviMail submitted: \(response.eviId)")
         
         return response
     }
