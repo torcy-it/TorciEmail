@@ -20,11 +20,18 @@ final class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showSessionExpired: Bool = false
     
-    private let apiService = VaporAPIService.shared
+    // MARK: - Dependencies
+    private let repository: AuthRepository
+    private let apiService = VaporAPIService.shared  // Solo per observare sessionExpired
+    
     private var cancellables = Set<AnyCancellable>()
     private var tokenExpirationTimer: Timer?
     
-    private init() {
+    // MARK: - Init
+    
+    /// Dependency Injection: il ViewModel dipende dal protocollo
+    init(repository: AuthRepository = AuthRepositoryImpl()) {
+        self.repository = repository
         checkAuthStatus()
         observeSessionExpiration()
     }
@@ -32,13 +39,12 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Auth Status
     
     private func checkAuthStatus() {
-        isAuthenticated = apiService.isAuthenticated && !isTokenExpired()
+        isAuthenticated = repository.isAuthenticated()
         
         if !isAuthenticated && apiService.isAuthenticated {
             print("Token expired on app launch, cleaning up...")
             cleanupAuth()
         } else if isAuthenticated {
-            // Avvia il controllo automatico se autenticato
             startTokenExpirationMonitoring()
         }
     }
@@ -56,13 +62,12 @@ final class AuthViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-
+    // MARK: - Token Expiration Monitoring
     
     private func startTokenExpirationMonitoring() {
-        // Stoppa il timer precedente se esiste
         stopTokenExpirationMonitoring()
         
-        guard let expirationDate = getTokenExpirationDate() else {
+        guard let expirationDate = repository.getTokenExpirationDate() else {
             print("Cannot get token expiration date")
             return
         }
@@ -73,7 +78,6 @@ final class AuthViewModel: ObservableObject {
         print("Token expires at: \(expirationDate)")
         print("Time until expiration: \(Int(timeUntilExpiration)) seconds")
         
-        // Se il token è già scaduto
         if timeUntilExpiration <= 0 {
             print("Token already expired!")
             handleSessionExpired()
@@ -99,48 +103,13 @@ final class AuthViewModel: ObservableObject {
     private func checkTokenExpiration() {
         print("Checking token expiration...")
         
-        if isTokenExpired() {
+        if repository.isTokenExpired() {
             print("Token expired detected by timer!")
             stopTokenExpirationMonitoring()
             handleSessionExpired()
         } else {
             print("Token still valid")
         }
-    }
-    
-    // MARK: - Token Expiration Check
-    
-    private func isTokenExpired() -> Bool {
-        guard let expirationDate = getTokenExpirationDate() else {
-            return true
-        }
-        
-        return expirationDate <= Date()
-    }
-    
-    private func getTokenExpirationDate() -> Date? {
-        guard let token = apiService.authToken else { return nil }
-        
-        let parts = token.split(separator: ".")
-        guard parts.count == 3 else { return nil }
-        
-        let payloadPart = String(parts[1])
-        
-        var base64 = payloadPart
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-        
-        while base64.count % 4 != 0 {
-            base64.append("=")
-        }
-        
-        guard let data = Data(base64Encoded: base64),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let exp = json["exp"] as? TimeInterval else {
-            return nil
-        }
-        
-        return Date(timeIntervalSince1970: exp)
     }
     
     // MARK: - Login
@@ -157,19 +126,19 @@ final class AuthViewModel: ObservableObject {
         print("Attempting login for: \(username)")
         
         do {
-            _ = try await apiService.login(username: username, password: password)
+            // Usa il repository invece dell'apiService
+            _ = try await repository.login(username: username, password: password)
             isAuthenticated = true
-            
             
             startTokenExpirationMonitoring()
             
             print("Login successful")
-        } catch let error as APIError {
+        } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("Login failed: \(error.errorDescription ?? "Unknown error")")
+            print("Login failed: \(error.errorDescription ?? "Unknown")")
         } catch {
             errorMessage = "Errore sconosciuto"
-            print("Login failed: \(error)")
+            print("Unexpected error: \(error)")
         }
         
         isLoading = false
@@ -186,16 +155,17 @@ final class AuthViewModel: ObservableObject {
         print("Attempting logout")
         
         do {
-            try await apiService.logout()
+            // Usa il repository
+            try await repository.logout()
             cleanupAuth()
             print("Logout successful")
-        } catch let error as APIError {
+        } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("Logout failed: \(error.errorDescription ?? "Unknown error")")
+            print("Logout failed: \(error.errorDescription ?? "Unknown")")
             cleanupAuth()
         } catch {
             errorMessage = "Errore durante il logout"
-            print("Logout failed: \(error)")
+            print("Unexpected error: \(error)")
             cleanupAuth()
         }
         
@@ -208,8 +178,6 @@ final class AuthViewModel: ObservableObject {
         print("Session expired - showing alert")
         
         stopTokenExpirationMonitoring()
-        
-        // Mostra l'alert
         showSessionExpired = true
     }
     
@@ -228,6 +196,6 @@ final class AuthViewModel: ObservableObject {
         username = ""
         password = ""
         stopTokenExpirationMonitoring()
+        repository.clearAuth()
     }
 }
-

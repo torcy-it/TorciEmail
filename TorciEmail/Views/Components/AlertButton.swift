@@ -5,14 +5,6 @@
 //  Created by Adolfo Torcicollo on 03/02/26.
 //
 
-
-//
-//  AlertButton.swift
-//  TorciEmail
-//
-//  Created by Adolfo Torcicollo
-//
-
 import Foundation
 
 struct AlertButton {

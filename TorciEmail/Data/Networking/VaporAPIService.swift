@@ -234,3 +234,24 @@ struct ErrorResponse: Codable {
     let error: Bool
     let reason: String
 }
+
+extension VaporAPIService {
+    
+    /// Invia una nuova EviMail certificata
+    /// - Parameter request: Richiesta di invio con tutti i dati
+    /// - Returns: Response con eviId dell'email inviata
+    /// - Throws: APIError in caso di errore
+    func submitEviMail(_ request: EviMailSubmitRequest) async throws -> EviMailSubmitResponse {
+        print("Submitting EviMail to: \(request.recipient.emailAddress)")
+        
+        let response: EviMailSubmitResponse = try await post(
+            endpoint: "/evimails/submit",
+            body: request,
+            requiresAuth: true
+        )
+        
+        print("✅ EviMail submitted: \(response.eviId)")
+        
+        return response
+    }
+}

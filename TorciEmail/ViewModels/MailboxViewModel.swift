@@ -5,13 +5,14 @@
 //  Created by Adolfo Torcicollo on 23/01/26.
 //
 
+
 import SwiftUI
 import Combine
 
 @MainActor
 final class MailboxViewModel: ObservableObject {
 
-    // UI state
+    // MARK: - UI State
     @Published var filtersButtonFrame: CGRect = .zero
     @Published var showFiltersMenu = false
     @Published var selectedFilters = "All Inbox"
@@ -20,17 +21,22 @@ final class MailboxViewModel: ObservableObject {
     @Published var isSearchPresented = false
     @Published var showModal = false
 
-    // Data
+    // MARK: - Data
     @Published var emails: [EmailItem] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let apiService = VaporAPIService.shared
+    // MARK: - Dependencies
+    private let repository: EmailRepository
     
     // MARK: - Init
     
-    init() {
-        print("MailboxViewModel initialized")
+    /// Dependency Injection: il ViewModel dipende dal protocollo, non dall'implementazione
+    /// Per i test, basta passare un MockEmailRepository
+    init(repository: EmailRepository = EmailRepositoryImpl()) {
+        self.repository = repository
+        print("MailboxViewModel initialized with repository")
+        
         // Carica le email all'avvio
         Task {
             await loadAllEmails()
@@ -39,35 +45,34 @@ final class MailboxViewModel: ObservableObject {
 
     // MARK: - Data Loading
     
+    /// Carica tutte le email dall'API
     func loadAllEmails() async {
         guard !isLoading else {
-            print("⚠️ Already loading, skipping...")
+            print("Already loading, skipping...")
             return
         }
         
-        print("📬 Loading ALL emails...")
+        print("Loading ALL emails via repository...")
         
         isLoading = true
         errorMessage = nil
         
         do {
-            let response = try await apiService.queryAllEviMails()
+            emails = try await repository.getAllEmails()
             
-            // Converti EviMail in EmailItem
-            emails = response.results.map { EviMailMapper.map($0) }
-            
-            print("✅ Loaded ALL \(emails.count) emails (total: \(response.totalMatches))")
-        } catch let error as APIError {
+            print("Loaded \(emails.count) emails")
+        } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("❌ Failed to load emails: \(error.errorDescription ?? "Unknown error")")
+            print("Failed to load emails: \(error.errorDescription ?? "Unknown")")
         } catch {
             errorMessage = "Errore nel caricamento delle email"
-            print("❌ Failed to load emails: \(error)")
+            print("Unexpected error: \(error)")
         }
         
         isLoading = false
     }
     
+    /// Ricarica le email (pull-to-refresh)
     func refreshEmails() async {
         guard !isLoading else {
             print("Already loading, skipping refresh...")
@@ -80,21 +85,20 @@ final class MailboxViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await apiService.queryAllEviMails()
-            emails = response.results.map { EviMailMapper.map($0) }
+            emails = try await repository.getAllEmails()
             print("Refreshed \(emails.count) emails")
-        } catch let error as APIError {
+        } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("Failed to refresh: \(error.errorDescription ?? "Unknown error")")
+            print("Refresh failed: \(error.errorDescription ?? "Unknown")")
         } catch {
             errorMessage = "Errore nel refresh delle email"
-            print("Failed to refresh: \(error)")
+            print("Unexpected error: \(error)")
         }
         
         isLoading = false
     }
 
-    // MARK: - Derived lists
+    // MARK: - Derived Lists (Filtering & Sorting)
 
     var filteredEmails: [EmailItem] {
         let filtered: [EmailItem]
@@ -137,7 +141,7 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
-    // MARK: - UI intents
+    // MARK: - UI Intents
 
     func setScrolledOffset(_ minY: CGFloat) {
         let shouldBeScrolled = minY < 120
