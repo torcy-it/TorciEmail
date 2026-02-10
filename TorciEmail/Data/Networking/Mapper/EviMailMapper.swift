@@ -222,141 +222,179 @@ struct EviMailMapper {
     private static func mapEvents(_ eviMail: EviMail) -> [EmailEvent] {
         var events: [EmailEvent] = []
         
-        // PREPARATION
+        // PREPARATION - Pending
         if let newOn = eviMail.newOn, let date = parseDate(newOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .preparation, state: .preparation(.pending), in: eviMail.affidavits),
                 event: .preparation,
                 state: .preparation(.pending),
                 timestampUTC: date,
-                description: "Message submitted and certified"
+                description: "Message submitted and certified",
+                color: .tail,
+                icon: "IconWaitEnv"
             ))
         }
         
+        // PREPARATION - Ready
         if let readyOn = eviMail.readyOn, let date = parseDate(readyOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .preparation, state: .preparation(.ready), in: eviMail.affidavits),
                 event: .preparation,
                 state: .preparation(.ready),
                 timestampUTC: date,
-                description: "Message ready for transmission"
+                description: "Message ready for transmission",
+                color: .tail,
+                icon: "IconSendEnv"
             ))
         }
         
-        // SENDING
+        // SENDING - Sent
         if let sentOn = eviMail.sentOn, let date = parseDate(sentOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .sending, state: .sending(.sent), in: eviMail.affidavits),
                 event: .sending,
                 state: .sending(.sent),
                 timestampUTC: date,
-                description: "Transmission result confirmed"
+                description: "Transmission result confirmed",
+                color: .tail,
+                icon: "IconSendEnv"
             ))
         }
         
+        // SENDING - Dispatched
         if let dispatchedOn = eviMail.dispatchedOn, let date = parseDate(dispatchedOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .sending, state: .sending(.dispatched), in: eviMail.affidavits),
                 event: .sending,
                 state: .sending(.dispatched),
                 timestampUTC: date,
-                description: "Message dispatched to recipient"
+                description: "Message dispatched to recipient",
+                color: .tail,
+                icon: "IconSendEnv"
             ))
         }
         
+        // SENDING - Delivered
         if let deliveredOn = eviMail.deliveredOn, let date = parseDate(deliveredOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .sending, state: .sending(.delivered), in: eviMail.affidavits),
                 event: .sending,
                 state: .sending(.delivered),
                 timestampUTC: date,
-                description: "Successfully delivered to mailbox"
+                description: "Successfully delivered to mailbox",
+                color: .tail,
+                icon: "IconSendEnv"
             ))
         }
         
+        // SENDING - Failed
         if let failedOn = eviMail.failedOn, let date = parseDate(failedOn) {
             events.append(EmailEvent(
-                id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
+                id: UUID(),
+                affidavit: findAffidavit(for: .sending, state: .sending(.failed), in: eviMail.affidavits),
                 event: .sending,
                 state: .sending(.failed),
                 timestampUTC: date,
-                description: "Transmission failed: \(eviMail.xmissionSummary ?? "Unknown error")"
+                description: "Transmission failed: \(eviMail.xmissionSummary ?? "Unknown error")",
+                color: .lightRed,
+                icon: "IconRejectedEnv"
             ))
         }
-            
-            // READING (read)
-            if let readOn = eviMail.readOn, let date = parseDate(readOn) {
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .reading,
-                    state: .reading(.opened),
-                    timestampUTC: date,
-                    description: "Message opened by recipient"
-                ))
-            }else if let repliedOn = eviMail.repliedOn, let date = parseDate(repliedOn){
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .reading,
-                    state: .reading(.opened),
-                    timestampUTC: date,
-                    description: "Message opened by recipient"
-                ))
-            }else if let waitingOn = eviMail.deliveredOn,eviMail.readOn == nil,let date = parseDate(waitingOn) {
-                let waitingDate = date.addingTimeInterval(1)
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .reading,
-                    state: .reading(.waiting),
-                    timestampUTC: waitingDate,
-                    description: "Awaiting recipient to open message"
-                ))
-            }
-            
-            
-            // DECISION (replied)
-            if let acceptedOn = eviMail.acceptedOn, let date = parseDate(acceptedOn) {
-                // ACCETTATO
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .decision,
-                    state: .decision(.contentAccepted),
-                    timestampUTC: date,
-                    description: "Content formally accepted by recipient"
-                ))
-            } else if let rejectedOn = eviMail.rejectedOn, let date = parseDate(rejectedOn) {
-                // RIFIUTATO
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .decision,
-                    state: .decision(.contentRejected),
-                    timestampUTC: date,
-                    description: "Content rejected by recipient"
-                ))
-            }else if let waitingDecision = eviMail.readOn, eviMail.repliedOn == nil, let date = parseDate(waitingDecision) {
-                //DECISION (waiting for replying)
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .decision,
-                    state: .decision(.contentWaiting),
-                    timestampUTC: date,
-                    description: "Awaiting recipient's formal response"
-                ))
-            }
-            
-            //CLOSED
-            if let expiredOn = eviMail.expiredOn, let date = parseDate(expiredOn) {
-                events.append(EmailEvent(
-                    id: UUID(uuidString: eviMail.uniqueId ?? "") ?? UUID(),
-                    event: .closing,
-                    state: .closing(.closed),
-                    timestampUTC: date,
-                    description: "Monitoring closed"
-                ))
-            }
-            
-            
-            return events.sorted { $0.timestampUTC < $1.timestampUTC }
+        
+        // READING - Opened
+        if let readOn = eviMail.readOn, let date = parseDate(readOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .reading, state: .reading(.opened), in: eviMail.affidavits),
+                event: .reading,
+                state: .reading(.opened),
+                timestampUTC: date,
+                description: "Message opened by recipient",
+                color: .sky,
+                icon: "IconOpenEnv"
+            ))
+        } else if let repliedOn = eviMail.repliedOn, let date = parseDate(repliedOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .reading, state: .reading(.opened), in: eviMail.affidavits),
+                event: .reading,
+                state: .reading(.opened),
+                timestampUTC: date,
+                description: "Message opened by recipient",
+                color: .sky,
+                icon: "IconOpenEnv"
+            ))
+        } else if let deliveredOn = eviMail.deliveredOn, eviMail.readOn == nil, let date = parseDate(deliveredOn) {
+            let waitingDate = date.addingTimeInterval(1)
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .reading, state: .reading(.waiting), in: eviMail.affidavits),
+                event: .reading,
+                state: .reading(.waiting),
+                timestampUTC: waitingDate,
+                description: "Awaiting recipient to open message",
+                color: .sky,
+                icon: "IconWaitOpenEnv"
+            ))
         }
+        
+        // DECISION - Accepted
+        if let acceptedOn = eviMail.acceptedOn, let date = parseDate(acceptedOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .decision, state: .decision(.contentAccepted), in: eviMail.affidavits),
+                event: .decision,
+                state: .decision(.contentAccepted),
+                timestampUTC: date,
+                description: "Content formally accepted by recipient",
+                color: .lightGreen,
+                icon: "IconContentAcc"
+            ))
+        } else if let rejectedOn = eviMail.rejectedOn, let date = parseDate(rejectedOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .decision, state: .decision(.contentRejected), in: eviMail.affidavits),
+                event: .decision,
+                state: .decision(.contentRejected),
+                timestampUTC: date,
+                description: "Content rejected by recipient",
+                color: .lightGreen,
+                icon: "IconContentRej"
+            ))
+        } else if let readOn = eviMail.readOn, eviMail.repliedOn == nil, let date = parseDate(readOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .decision, state: .decision(.contentWaiting), in: eviMail.affidavits),
+                event: .decision,
+                state: .decision(.contentWaiting),
+                timestampUTC: date,
+                description: "Awaiting recipient's formal response",
+                color: .lightGreen,
+                icon: "IconContentWait"
+            ))
+        }
+        
+        // CLOSING - Closed
+        if let expiredOn = eviMail.expiredOn, let date = parseDate(expiredOn) {
+            events.append(EmailEvent(
+                id: UUID(),
+                affidavit: findAffidavit(for: .closing, state: .closing(.closed), in: eviMail.affidavits),
+                event: .closing,
+                state: .closing(.closed),
+                timestampUTC: date,
+                description: "Monitoring closed",
+                color: .strongPrimary,
+                icon: "checkmark.seal"
+            ))
+        }
+        
+        return events.sorted { $0.timestampUTC < $1.timestampUTC }
+    }
     
     /// Determina lo stato dei 3 eventi fissi (per le 3 icone)
     private static func mapEventStatus(_ eviMail: EviMail) -> EmailEventStatus {
@@ -416,6 +454,61 @@ struct EviMailMapper {
             readingStatus: readingStatus,
             contentStatus: contentStatus
         )
+    }
+    
+    private static func findAffidavit(
+        for eventType: EventType,
+        state: EventState,
+        in affidavits: [Affidavit]?
+    ) -> Affidavit? {
+        guard let affidavits = affidavits else { return nil }
+        
+        // Lista dei kind da cercare in base al tipo di evento
+        let kindsToFind: [String]
+        
+        switch (eventType, state) {
+        case (.preparation, .preparation(.pending)):
+            kindsToFind = ["EviMail:Submitted:Advanced", "EviMail:Submitted"]
+            
+        case (.preparation, .preparation(.ready)):
+            kindsToFind = ["EviMail:Event"]
+            
+        case (.sending, .sending(.sent)):
+            kindsToFind = ["EviMail:Transmission:Result"]
+            
+        case (.sending, .sending(.delivered)):
+            kindsToFind = ["EviMail:Delivery:Result"]
+            
+        case (.sending, .sending(.failed)):
+            kindsToFind = ["EviMail:Failed"]
+            
+        case (.reading, .reading(.opened)):
+            kindsToFind = ["EviMail:Read"]
+            
+        case (.decision, .decision(.contentAccepted)), (.decision, .decision(.contentRejected)):
+            kindsToFind = ["EviMail:Committed:Advanced", "EviMail:Committed"]
+            
+        case (.closing, .closing(.closed)):
+            kindsToFind = [
+                "EviMail:Complete:Advanced",
+                "EviMail:Complete",
+                "EviMail:Closed:Advanced",
+                "EviMail:Closed"
+            ]
+            
+        default:
+            kindsToFind = []
+        }
+        
+        // Cerca il primo affidavit che corrisponde ai kind cercati
+        for kind in kindsToFind {
+            if let affidavit = affidavits.first(where: { $0.kind == kind }) {
+                return affidavit
+            }
+        }
+        
+        // Fallback: usa il primo affidavit disponibile
+        return affidavits.first
     }
     
     // MARK: - Date Formatting

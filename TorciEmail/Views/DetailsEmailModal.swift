@@ -237,7 +237,7 @@ struct DetailRow: View {
 }
 
 
-
+/*
 // MARK: - Preview
 #Preview {
     DetailsEmailModal(
@@ -245,3 +245,4 @@ struct DetailRow: View {
         email: .example
     )
 }
+*/

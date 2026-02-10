@@ -10,23 +10,32 @@ import SwiftUI
 
 struct EmailEvent: Hashable {
     let id: UUID
+    let affidavit: Affidavit?
     let event: EventType
     let state: EventState
     let timestampUTC: Date
     let description: String
+    let color: Color
+    let icon: String
     
     init(
         id: UUID = UUID(),
+        affidavit: Affidavit? = nil,
         event: EventType,
         state: EventState,
         timestampUTC: Date,
-        description: String
+        description: String,
+        color: Color,
+        icon:  String
     ) {
         self.id = id
+        self.affidavit = affidavit
         self.event = event
         self.state = state
         self.timestampUTC = timestampUTC
-        self.description = description 
+        self.description = description
+        self.color = color
+        self.icon = icon
     }
 }
 enum EventType: Hashable {
@@ -177,5 +186,35 @@ enum DecisionState: Hashable {
 
 enum ClosingState: Hashable {
     case closed
+}
+
+extension EmailEvent {
+
+    var timestampShort: String {
+        timestampUTC.formatted(
+            .dateTime
+                .day(.twoDigits)
+                .month(.twoDigits)
+                .year(.twoDigits)
+                .hour(.twoDigits(amPM: .omitted))
+                .minute(.twoDigits)
+        )
+    }
+
+  
+    var timestampReadable: String {
+        timestampUTC.formatted(
+            .dateTime
+                .day()
+                .month(.abbreviated)
+                .year()
+                .hour(.twoDigits(amPM: .omitted))
+                .minute(.twoDigits)
+        )
+    }
+
+    var timestampRelative: String {
+        timestampUTC.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
+    }
 }
 

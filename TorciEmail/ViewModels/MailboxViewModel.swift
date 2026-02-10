@@ -82,6 +82,7 @@ final class MailboxViewModel: ObservableObject {
         print("Refreshing emails...")
         
         isLoading = true
+        emails = []
         errorMessage = nil
         
         do {

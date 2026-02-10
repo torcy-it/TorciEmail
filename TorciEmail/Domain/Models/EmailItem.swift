@@ -245,9 +245,20 @@ extension EmailItem {
 
     // 1) Nuova / in preparazione (New)
     static var example: EmailItem {
-        EmailItem(
+        // Affidavit per questo esempio
+        let submittedAffidavit = Affidavit(
+            uniqueId: "aff-submitted-001",
+            date: "2026-01-30T15:36:38.0000000+00:00",
+            evidenceUniqueId: "ex-new-001",
+            partyUniqueId: "party-001",
+            description: "Certificate of admission of certified email",
+            kind: "EviMail:Submitted",
+            additionalData: [:]
+        )
+        
+        let example2 = EmailItem(
             id: "ex-new-001",
-            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            issuer: Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
             recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
             sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
@@ -263,14 +274,17 @@ extension EmailItem {
             events: [
                 EmailEvent(
                     id: UUID(),
+                    affidavit: submittedAffidavit,
                     event: .preparation,
                     state: .preparation(.pending),
                     timestampUTC: Date().addingTimeInterval(-3600),
-                    description: "Message submitted and certified"
+                    description: "Message submitted and certified",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 )
             ],
             attachments: [],
-            affidavits: [],
+            affidavits: [submittedAffidavit],
             certificationLevel: "Standard",
             sourceChannel: "Web",
             creationDate: "30/01/2026 15:36:38",
@@ -297,13 +311,45 @@ extension EmailItem {
             outcome: nil,
             customLayoutLogoUrl: nil
         )
+        return example2
     }
 
     // 2) Inviata e consegnata ma non letta (Delivered)
     static var exampleDeliveredNotRead: EmailItem {
-        EmailItem(
+        // Affidavit per questo esempio
+        let submittedAdvancedAffidavit = Affidavit(
+            uniqueId: "aff-submitted-adv-002",
+            date: "2026-01-30T15:36:38.0000000+00:00",
+            evidenceUniqueId: "ex-delivered-002",
+            partyUniqueId: "party-002",
+            description: "Certificate of admission of certified email (with graphical representation)",
+            kind: "EviMail:Submitted:Advanced",
+            additionalData: [:]
+        )
+        
+        let transmissionAffidavit = Affidavit(
+            uniqueId: "aff-transmission-002",
+            date: "2026-01-30T15:36:40.0000000+00:00",
+            evidenceUniqueId: "ex-delivered-002",
+            partyUniqueId: "party-002",
+            description: "Certification of the result of the certified email transmission",
+            kind: "EviMail:Transmission:Result",
+            additionalData: [:]
+        )
+        
+        let deliveryAffidavit = Affidavit(
+            uniqueId: "aff-delivery-002",
+            date: "2026-01-30T15:36:41.0000000+00:00",
+            evidenceUniqueId: "ex-delivered-002",
+            partyUniqueId: "party-002",
+            description: "Certification of the result of the delivery of the certified email",
+            kind: "EviMail:Delivery:Result",
+            additionalData: [:]
+        )
+        
+        let completeExample = EmailItem(
             id: "ex-delivered-002",
-            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            issuer: Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
             recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
             sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
@@ -319,31 +365,43 @@ extension EmailItem {
             events: [
                 EmailEvent(
                     id: UUID(),
+                    affidavit: submittedAdvancedAffidavit,
                     event: .preparation,
                     state: .preparation(.pending),
                     timestampUTC: Date().addingTimeInterval(-7200),
-                    description: "Message submitted and certified"
+                    description: "Message submitted and certified",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: transmissionAffidavit,
                     event: .preparation,
                     state: .preparation(.ready),
                     timestampUTC: Date().addingTimeInterval(-7000),
-                    description: "Message ready for transmission"
+                    description: "Message ready for transmission",
+                    color: .tail,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: deliveryAffidavit,
                     event: .sending,
                     state: .sending(.delivered),
                     timestampUTC: Date().addingTimeInterval(-3600),
-                    description: "Successfully delivered to mailbox"
+                    description: "Successfully delivered to mailbox",
+                    color: .tail,
+                    icon: "IconSendEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: deliveryAffidavit,
                     event: .reading,
                     state: .reading(.waiting),
                     timestampUTC: Date().addingTimeInterval(-3599),
-                    description: "Awaiting recipient to open message"
+                    description: "Awaiting recipient to open message",
+                    color: .gray,
+                    icon: "IconWaitOpenEnv"
                 )
             ],
             attachments: [
@@ -357,7 +415,7 @@ extension EmailItem {
                     kind: .pdf
                 )
             ],
-            affidavits: [],
+            affidavits: [submittedAdvancedAffidavit, transmissionAffidavit, deliveryAffidavit],
             certificationLevel: "Standard",
             sourceChannel: "Api",
             creationDate: "30/01/2026 15:36:38",
@@ -384,13 +442,64 @@ extension EmailItem {
             outcome: nil,
             customLayoutLogoUrl: nil
         )
+        return completeExample
     }
 
     // 3) Letta e accettata (Outcome Accepted)
     static var exampleAccepted: EmailItem {
-        EmailItem(
+        let submittedAdvancedAffidavit = Affidavit(
+            uniqueId: "aff-submitted-adv-003",
+            date: "2026-01-30T15:36:38.0000000+00:00",
+            evidenceUniqueId: "ex-accepted-003",
+            partyUniqueId: "party-003",
+            description: "Certificate of admission of certified email (with graphical representation)",
+            kind: "EviMail:Submitted:Advanced",
+            additionalData: [:]
+        )
+        
+        let transmissionAffidavit = Affidavit(
+            uniqueId: "aff-transmission-003",
+            date: "2026-01-30T15:36:40.0000000+00:00",
+            evidenceUniqueId: "ex-accepted-003",
+            partyUniqueId: "party-003",
+            description: "Certification of the result of the certified email transmission",
+            kind: "EviMail:Transmission:Result",
+            additionalData: [:]
+        )
+        
+        let deliveryAffidavit = Affidavit(
+            uniqueId: "aff-delivery-003",
+            date: "2026-01-30T15:36:41.0000000+00:00",
+            evidenceUniqueId: "ex-accepted-003",
+            partyUniqueId: "party-003",
+            description: "Certification of the result of the delivery of the certified email",
+            kind: "EviMail:Delivery:Result",
+            additionalData: [:]
+        )
+        
+        let readAffidavit = Affidavit(
+            uniqueId: "aff-read-003",
+            date: "2026-01-30T15:38:23.0000000+00:00",
+            evidenceUniqueId: "ex-accepted-003",
+            partyUniqueId: "party-003",
+            description: "Certification of acknowledgement of opening/reading of message",
+            kind: "EviMail:Read",
+            additionalData: [:]
+        )
+        
+        let committedAdvancedAffidavit = Affidavit(
+            uniqueId: "aff-committed-adv-003",
+            date: "2026-01-30T15:39:28.0000000+00:00",
+            evidenceUniqueId: "ex-accepted-003",
+            partyUniqueId: "party-003",
+            description: "Certification of formal acceptation of the message (with graphical representation)",
+            kind: "EviMail:Committed:Advanced",
+            additionalData: ["outcome": "accepted"]
+        )
+        
+        let example3 = EmailItem(
             id: "ex-accepted-003",
-            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            issuer: Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
             recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
             sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [
@@ -408,52 +517,62 @@ extension EmailItem {
             events: [
                 EmailEvent(
                     id: UUID(),
+                    affidavit: submittedAdvancedAffidavit,
                     event: .preparation,
                     state: .preparation(.pending),
                     timestampUTC: Date().addingTimeInterval(-86400),
-                    description: "Message submitted and certified"
+                    description: "Message submitted and certified",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: transmissionAffidavit,
                     event: .preparation,
                     state: .preparation(.ready),
                     timestampUTC: Date().addingTimeInterval(-86300),
-                    description: "Message ready for transmission"
+                    description: "Message ready for transmission",
+                    color: .tail,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: deliveryAffidavit,
                     event: .sending,
                     state: .sending(.delivered),
                     timestampUTC: Date().addingTimeInterval(-80000),
-                    description: "Successfully delivered to mailbox"
+                    description: "Successfully delivered to mailbox",
+                    color: .tail,
+                    icon: "IconSendEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: readAffidavit,
                     event: .reading,
                     state: .reading(.opened),
                     timestampUTC: Date().addingTimeInterval(-70000),
-                    description: "Message opened by recipient"
+                    description: "Message opened by recipient",
+                    color: .lightGreen,
+                    icon: "IconOpenEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: committedAdvancedAffidavit,
                     event: .decision,
                     state: .decision(.contentAccepted),
                     timestampUTC: Date().addingTimeInterval(-60000),
-                    description: "Content formally accepted by recipient"
+                    description: "Content formally accepted by recipient",
+                    color: .sky,
+                    icon: "IconContentAcc"
                 )
             ],
-            attachments: [
-                EmailAttachment(
-                    id: "019c0f8c994d4b8daedd98a0b61615bf",
-                    name: "pdf-sample_0.pdf",
-                    filename: "pdf-sample_0.pdf",
-                    size: 13264,
-                    mimeType: "application/pdf",
-                    hash: "SHA256:3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4",
-                    kind: .pdf
-                )
+            affidavits: [
+                submittedAdvancedAffidavit,
+                transmissionAffidavit,
+                deliveryAffidavit,
+                readAffidavit,
+                committedAdvancedAffidavit
             ],
-            affidavits: [],
             certificationLevel: "Advanced",
             sourceChannel: "Web",
             creationDate: "30/01/2026 15:36:38",
@@ -485,13 +604,35 @@ extension EmailItem {
             outcome: "Accepted",
             customLayoutLogoUrl: nil
         )
+        
+        return example3
     }
 
     // 4) Fallita (xmissionResult = false)
     static var exampleFailed: EmailItem {
-        EmailItem(
+        let submittedAffidavit = Affidavit(
+            uniqueId: "aff-submitted-004",
+            date: "2026-01-30T10:12:00.0000000+00:00",
+            evidenceUniqueId: "ex-failed-004",
+            partyUniqueId: "party-004",
+            description: "Certificate of admission of certified email",
+            kind: "EviMail:Submitted",
+            additionalData: [:]
+        )
+        
+        let failedAffidavit = Affidavit(
+            uniqueId: "aff-failed-004",
+            date: "2026-01-30T10:12:05.0000000+00:00",
+            evidenceUniqueId: "ex-failed-004",
+            partyUniqueId: "party-004",
+            description: "Certification of message processing failure",
+            kind: "EviMail:Failed",
+            additionalData: ["error": "Unrecoverable error: delivery failed"]
+        )
+        
+        let example4 = EmailItem(
             id: "ex-failed-004",
-            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            issuer: Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
             recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
             sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
@@ -507,21 +648,27 @@ extension EmailItem {
             events: [
                 EmailEvent(
                     id: UUID(),
+                    affidavit: submittedAffidavit,
                     event: .preparation,
                     state: .preparation(.pending),
                     timestampUTC: Date().addingTimeInterval(-7200),
-                    description: "Message submitted and certified"
+                    description: "Message submitted and certified",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: failedAffidavit,
                     event: .sending,
                     state: .sending(.failed),
                     timestampUTC: Date().addingTimeInterval(-3600),
-                    description: "Transmission failed: Unrecoverable error: delivery failed."
+                    description: "Transmission failed: Unrecoverable error: delivery failed.",
+                    color: .lightRed,
+                    icon: "IconRejectedEnv"
                 )
             ],
             attachments: [],
-            affidavits: [],
+            affidavits: [submittedAffidavit, failedAffidavit],
             certificationLevel: "Standard",
             sourceChannel: "Api",
             creationDate: "30/01/2026 10:12:00",
@@ -548,13 +695,54 @@ extension EmailItem {
             outcome: nil,
             customLayoutLogoUrl: nil
         )
+        return example4
     }
 
     // 5) Scaduta (Expired)
     static var exampleExpired: EmailItem {
-        EmailItem(
+        let submittedAffidavit = Affidavit(
+            uniqueId: "aff-submitted-005",
+            date: "2026-01-30T09:00:00.0000000+00:00",
+            evidenceUniqueId: "ex-expired-005",
+            partyUniqueId: "party-005",
+            description: "Certificate of admission of certified email",
+            kind: "EviMail:Submitted",
+            additionalData: [:]
+        )
+        
+        let deliveryAffidavit = Affidavit(
+            uniqueId: "aff-delivery-005",
+            date: "2026-01-30T09:00:10.0000000+00:00",
+            evidenceUniqueId: "ex-expired-005",
+            partyUniqueId: "party-005",
+            description: "Certification of the result of the delivery of the certified email",
+            kind: "EviMail:Delivery:Result",
+            additionalData: [:]
+        )
+        
+        let closedAffidavit = Affidavit(
+            uniqueId: "aff-closed-005",
+            date: "2026-01-31T09:25:00.0000000+00:00",
+            evidenceUniqueId: "ex-expired-005",
+            partyUniqueId: "party-005",
+            description: "Certification of completion of follow-up",
+            kind: "EviMail:Closed",
+            additionalData: [:]
+        )
+        
+        let completeAffidavit = Affidavit(
+            uniqueId: "aff-complete-005",
+            date: "2026-01-31T09:25:00.0000000+00:00",
+            evidenceUniqueId: "ex-expired-005",
+            partyUniqueId: "party-005",
+            description: "Certification of the certified email file",
+            kind: "EviMail:Complete",
+            additionalData: [:]
+        )
+        
+        let example1 = EmailItem(
             id: "ex-expired-005",
-            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            issuer: Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
             recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
             sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
@@ -570,28 +758,42 @@ extension EmailItem {
             events: [
                 EmailEvent(
                     id: UUID(),
+                    affidavit: submittedAffidavit,
                     event: .preparation,
                     state: .preparation(.pending),
                     timestampUTC: Date().addingTimeInterval(-172800),
-                    description: "Message submitted and certified"
+                    description: "Message submitted and certified",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: deliveryAffidavit,
                     event: .sending,
                     state: .sending(.delivered),
                     timestampUTC: Date().addingTimeInterval(-86400),
-                    description: "Successfully delivered to mailbox"
+                    description: "Successfully delivered to mailbox",
+                    color: .tail,
+                    icon: "IconSendEnv"
                 ),
                 EmailEvent(
                     id: UUID(),
+                    affidavit: completeAffidavit,
                     event: .closing,
                     state: .closing(.closed),
                     timestampUTC: Date().addingTimeInterval(-3600),
-                    description: "Certificate validity period expired"
+                    description: "Certificate validity period expired",
+                    color: .gray,
+                    icon: "IconWaitEnv"
                 )
             ],
             attachments: [],
-            affidavits: [],
+            affidavits: [
+                submittedAffidavit,
+                deliveryAffidavit,
+                closedAffidavit,
+                completeAffidavit
+            ],
             certificationLevel: "Standard",
             sourceChannel: "Web",
             creationDate: "30/01/2026 09:00:00",
@@ -618,5 +820,8 @@ extension EmailItem {
             outcome: "Expired",
             customLayoutLogoUrl: nil
         )
+        
+        return example1
     }
 }
+
