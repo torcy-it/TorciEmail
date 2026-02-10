@@ -2,21 +2,23 @@
 //  EmailItem.swift
 //  TorciEmail
 //
+//  Fixed version with correct commentsAllowed type
+//
 
 import SwiftUI
 
 struct EmailItem: Identifiable, Hashable {
     let id: String
-    let senderName: String
-    let senderEmail: String
-    let recipientName: String
-    let recipientEmail: String
-    let carbonCopy: [CarbonCopyRecipient]
+    let issuer: Contact
+    let recipient: Contact
+    let sender: Contact
+    let carbonCopy: [Contact]
     
     let emailObject: String
-    let emailDescription: String
+    let emailBody: String
     let date: String
     let status: EmailStatus
+
     
     // 3 stati fissi per le icone nella lista
     let eventStatus: EmailEventStatus
@@ -24,9 +26,7 @@ struct EmailItem: Identifiable, Hashable {
     // Array completo eventi per timeline dettagliata
     let events: [EmailEvent]
     
-  
     let attachments: [EmailAttachment]
-    
     let affidavits: [Affidavit]
     
     // CAMPI PER I DETTAGLI
@@ -37,7 +37,10 @@ struct EmailItem: Identifiable, Hashable {
     let dispatchedDate: String?
     let openedDate: String?
     let repliedDate: String?
+    let acceptedDate: String?
+    let rejectedDate: String?
     let expirationDate: String?
+    let failedDate: String?
     let onlineRetentionPeriod: Int?
     let affidavitKinds: [String]
     let language: String
@@ -50,59 +53,64 @@ struct EmailItem: Identifiable, Hashable {
     let accessControl: String?
     let signatureNotice: String?
     
-  
+    // Raw API fields
     let acceptOrRejectComments: String?
     let costCentre: String?
     let xmissionResult: Bool?
     let xmissionSummary: String?
+    let outcome: String?
+    let customLayoutLogoUrl: String?
     
     init(
         id: String = UUID().uuidString,
-        senderName: String,
-        senderEmail: String,
-        recipientName: String,
-        recipientEmail: String,
-        carbonCopy: [CarbonCopyRecipient] = [],
+        issuer: Contact,
+        recipient : Contact,
+        sender: Contact,
+        carbonCopy: [Contact] = [],
         emailObject: String,
-        emailDescription: String,
+        emailBody: String,
         date: String,
         status: EmailStatus,
         eventStatus: EmailEventStatus,
         events: [EmailEvent] = [],
         attachments: [EmailAttachment] = [],
         affidavits: [Affidavit] = [],
-        certificationLevel: String? =  nil,
+        certificationLevel: String? = nil,
         sourceChannel: String? = nil,
         creationDate: String? = nil,
         admissionDate: String? = nil,
         dispatchedDate: String? = nil,
         openedDate: String? = nil,
         repliedDate: String? = nil,
+        acceptedDate : String? = nil,
+        rejectedDate: String? = nil,
         expirationDate: String? = nil,
+        failedDate: String? = nil,
         onlineRetentionPeriod: Int? = nil,
         affidavitKinds: [String] = [],
-        language: String = "it",
-        aspect: String = "Certificato",
+        language: String = "English",
+        aspect: String = "Standard Certified",
         totalSize: Int? = nil,
         contentSize: Int? = nil,
         requiresCaptcha: Bool = false,
         allowsAgreement: Bool = true,
-        commentsAllowed: Bool = true,
+        commentsAllowed: Bool = false,
         accessControl: String? = nil,
         signatureNotice: String? = nil,
         acceptOrRejectComments: String? = nil,
         costCentre: String? = nil,
         xmissionResult: Bool? = nil,
-        xmissionSummary: String? = nil
+        xmissionSummary: String? = nil,
+        outcome: String? = nil,
+        customLayoutLogoUrl: String? = nil,
     ) {
         self.id = id
-        self.senderName = senderName
-        self.senderEmail = senderEmail
-        self.recipientName = recipientName
-        self.recipientEmail = recipientEmail
+        self.issuer = issuer
+        self.recipient = recipient
+        self.sender = sender
         self.carbonCopy = carbonCopy
         self.emailObject = emailObject
-        self.emailDescription = emailDescription
+        self.emailBody = emailBody
         self.date = date
         self.status = status
         self.certificationLevel = certificationLevel
@@ -116,7 +124,10 @@ struct EmailItem: Identifiable, Hashable {
         self.dispatchedDate = dispatchedDate
         self.openedDate = openedDate
         self.repliedDate = repliedDate
+        self.acceptedDate = acceptedDate
+        self.rejectedDate = rejectedDate
         self.expirationDate = expirationDate
+        self.failedDate = failedDate
         self.onlineRetentionPeriod = onlineRetentionPeriod
         self.affidavitKinds = affidavitKinds
         self.language = language
@@ -132,8 +143,11 @@ struct EmailItem: Identifiable, Hashable {
         self.costCentre = costCentre
         self.xmissionResult = xmissionResult
         self.xmissionSummary = xmissionSummary
+        self.outcome = outcome
+        self.customLayoutLogoUrl = customLayoutLogoUrl
     }
     
+    // MARK: - Computed Properties
     
     var lastEventDate: Date? {
         events.map { $0.timestampUTC }.max()
@@ -147,15 +161,10 @@ struct EmailItem: Identifiable, Hashable {
         !attachments.isEmpty
     }
     
-
     var affidavitCount: Int {
         affidavits.count
     }
-    
-    var carbonCopyFormatted: String {
-        guard !carbonCopy.isEmpty else { return "-" }
-        return carbonCopy.map { "\($0.name) <\($0.emailAddress)>" }.joined(separator: ", ")
-    }
+
     
     var affidavitKindsFormatted: String {
         guard !affidavitKinds.isEmpty else { return "-" }
@@ -163,8 +172,10 @@ struct EmailItem: Identifiable, Hashable {
     }
     
     var certificationLevelGet: String {
-        (certificationLevel?.isEmpty == false) ? certificationLevel! :
-        (affidavitKinds.contains { $0.localizedCaseInsensitiveContains("advanced") } ? "Advanced" : "Standard")
+        if let level = certificationLevel, !level.isEmpty {
+            return level
+        }
+        return affidavitKinds.contains { $0.localizedCaseInsensitiveContains("advanced") } ? "Advanced" : "Standard"
     }
     
     var totalSizeFormatted: String {
@@ -178,11 +189,57 @@ struct EmailItem: Identifiable, Hashable {
     }
     
     var retentionPeriodFormatted: String {
-        guard let period = onlineRetentionPeriod else { return "-" }
-        return "\(period) anno\(period == 1 ? "" : "i")"
+        guard let period = onlineRetentionPeriod else { return "Not specified" }
+        if period == 1 {
+            return "1 year"
+        }
+        return "\(period) years"
     }
 }
 
+extension Contact {
+    static let unknown = Contact(legalName: "Unknown", emailAddress: "Unknown@contact.it")
+}
+
+extension Contact {
+    var formatted: String {
+        let name = (legalName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = (emailAddress ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if name.isEmpty && email.isEmpty { return "-" }
+        if name.isEmpty { return "<\(email)>" }
+        if email.isEmpty { return name }
+        return "\(name) <\(email)>"
+    }
+}
+
+extension Array where Element == Contact {
+    var formatted: String {
+        let parts = self.map(\.formatted).filter { $0 != "-" }
+        return parts.isEmpty ? "-" : parts.joined(separator: ", ")
+    }
+}
+
+extension String {
+    func stripHTMLTagsRough() -> String {
+        self
+            .replacingOccurrences(of: "<br>", with: "\n")
+            .replacingOccurrences(of: "<br/>", with: "\n")
+            .replacingOccurrences(of: "<br />", with: "\n")
+            .replacingOccurrences(of: "</p>", with: "\n\n")
+            .replacingOccurrences(of: "<p>", with: "")
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+extension EmailItem {
+    var bodyPlainText: String {
+        emailBody.stripHTMLTagsRough()
+    }
+}
+
+// MARK: - Examples
 
 extension EmailItem {
 
@@ -190,13 +247,12 @@ extension EmailItem {
     static var example: EmailItem {
         EmailItem(
             id: "ex-new-001",
-            senderName: "Namirial-test-LC",
-            senderEmail: "support@ecertia.com",
-            recipientName: "Studente",
-            recipientEmail: "adolfo <torci.ado@outlook.it>",
+            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
+            sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
             emailObject: "Richiesta presa in carico",
-            emailDescription: "<p>Messaggio appena acquisito dal sistema.</p>",
+            emailBody: "<p>Messaggio appena acquisito dal sistema.</p>",
             date: "30/01/26",
             status: .new,
             eventStatus: EmailEventStatus(
@@ -204,9 +260,18 @@ extension EmailItem {
                 readingStatus: .waiting,
                 contentStatus: .waiting
             ),
-            events: [],
+            events: [
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.pending),
+                    timestampUTC: Date().addingTimeInterval(-3600),
+                    description: "Message submitted and certified"
+                )
+            ],
             attachments: [],
             affidavits: [],
+            certificationLevel: "Standard",
             sourceChannel: "Web",
             creationDate: "30/01/2026 15:36:38",
             admissionDate: nil,
@@ -215,20 +280,22 @@ extension EmailItem {
             repliedDate: nil,
             expirationDate: nil,
             onlineRetentionPeriod: 1,
-            affidavitKinds: [],
-            language: "en",
-            aspect: "Certificato",
+            affidavitKinds: ["Submitted"],
+            language: "English",
+            aspect: "Standard Certified",
             totalSize: nil,
             contentSize: 42,
             requiresCaptcha: false,
             allowsAgreement: true,
-            commentsAllowed: true,
+            commentsAllowed: false,
             accessControl: nil,
-            signatureNotice: nil,
+            signatureNotice: "Digital signature with: Submitted",
             acceptOrRejectComments: nil,
             costCentre: "Namirial",
             xmissionResult: nil,
-            xmissionSummary: nil
+            xmissionSummary: nil,
+            outcome: nil,
+            customLayoutLogoUrl: nil
         )
     }
 
@@ -236,13 +303,12 @@ extension EmailItem {
     static var exampleDeliveredNotRead: EmailItem {
         EmailItem(
             id: "ex-delivered-002",
-            senderName: "Namirial-test-LC",
-            senderEmail: "support@ecertia.com",
-            recipientName: "Mario Rossi",
-            recipientEmail: "mario.rossi@example.com",
+            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
+            sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
             emailObject: "Consegna effettuata",
-            emailDescription: "<p>La mail è stata consegnata al server del destinatario.</p>",
+            emailBody: "<p>La mail è stata consegnata al server del destinatario.</p>",
             date: "30/01/26",
             status: .delivered,
             eventStatus: EmailEventStatus(
@@ -250,7 +316,36 @@ extension EmailItem {
                 readingStatus: .waiting,
                 contentStatus: .waiting
             ),
-            events: [],
+            events: [
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.pending),
+                    timestampUTC: Date().addingTimeInterval(-7200),
+                    description: "Message submitted and certified"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.ready),
+                    timestampUTC: Date().addingTimeInterval(-7000),
+                    description: "Message ready for transmission"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .sending,
+                    state: .sending(.delivered),
+                    timestampUTC: Date().addingTimeInterval(-3600),
+                    description: "Successfully delivered to mailbox"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .reading,
+                    state: .reading(.waiting),
+                    timestampUTC: Date().addingTimeInterval(-3599),
+                    description: "Awaiting recipient to open message"
+                )
+            ],
             attachments: [
                 EmailAttachment(
                     id: "att-001",
@@ -263,6 +358,7 @@ extension EmailItem {
                 )
             ],
             affidavits: [],
+            certificationLevel: "Standard",
             sourceChannel: "Api",
             creationDate: "30/01/2026 15:36:38",
             admissionDate: "30/01/2026 15:36:38",
@@ -272,35 +368,36 @@ extension EmailItem {
             expirationDate: nil,
             onlineRetentionPeriod: 1,
             affidavitKinds: ["Submitted", "SubmittedAdvanced", "DeliveryResult"],
-            language: "en",
-            aspect: "Certificato",
+            language: "English",
+            aspect: "Standard Certified",
             totalSize: 13264,
             contentSize: 120,
             requiresCaptcha: false,
             allowsAgreement: true,
-            commentsAllowed: true,
+            commentsAllowed: false,
             accessControl: nil,
-            signatureNotice: nil,
+            signatureNotice: "Digital signature with: Submitted, SubmittedAdvanced, DeliveryResult",
             acceptOrRejectComments: nil,
             costCentre: "Namirial",
             xmissionResult: true,
-            xmissionSummary: "Sent to recipient’s mail server, waiting for follow-up updates."
+            xmissionSummary: "Sent to recipient's mail server, waiting for follow-up updates.",
+            outcome: nil,
+            customLayoutLogoUrl: nil
         )
     }
 
-    // 3) Letta e accettata (Outcome Accepted / acceptedOn valorizzato)
+    // 3) Letta e accettata (Outcome Accepted)
     static var exampleAccepted: EmailItem {
         EmailItem(
             id: "ex-accepted-003",
-            senderName: "Namirial-test-LC",
-            senderEmail: "support@ecertia.com",
-            recipientName: "Studente",
-            recipientEmail: "adolfo <torci.ado@outlook.it>",
+            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
+            sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [
-                CarbonCopyRecipient(name: "adolfo", emailAddress: "torcy.ado@gmail.com")
+                Contact(legalName: "Adolfo", emailAddress: "torcy.ado@gmail.com")
             ],
-            emailObject: "Test Per verificare metadati evimail",
-            emailDescription: "<p>Sto eseguendo un test per verificare i metadati.</p>",
+            emailObject: "Test per verificare metadati evimail",
+            emailBody: "<p>Sto eseguendo un test per verificare i metadati.</p>",
             date: "31/01/26",
             status: .closed,
             eventStatus: EmailEventStatus(
@@ -308,7 +405,43 @@ extension EmailItem {
                 readingStatus: .opened,
                 contentStatus: .accepted
             ),
-            events: [],
+            events: [
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.pending),
+                    timestampUTC: Date().addingTimeInterval(-86400),
+                    description: "Message submitted and certified"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.ready),
+                    timestampUTC: Date().addingTimeInterval(-86300),
+                    description: "Message ready for transmission"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .sending,
+                    state: .sending(.delivered),
+                    timestampUTC: Date().addingTimeInterval(-80000),
+                    description: "Successfully delivered to mailbox"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .reading,
+                    state: .reading(.opened),
+                    timestampUTC: Date().addingTimeInterval(-70000),
+                    description: "Message opened by recipient"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .decision,
+                    state: .decision(.contentAccepted),
+                    timestampUTC: Date().addingTimeInterval(-60000),
+                    description: "Content formally accepted by recipient"
+                )
+            ],
             attachments: [
                 EmailAttachment(
                     id: "019c0f8c994d4b8daedd98a0b61615bf",
@@ -321,6 +454,7 @@ extension EmailItem {
                 )
             ],
             affidavits: [],
+            certificationLevel: "Advanced",
             sourceChannel: "Web",
             creationDate: "30/01/2026 15:36:38",
             admissionDate: "30/01/2026 15:36:38",
@@ -335,19 +469,21 @@ extension EmailItem {
                 "Closed", "ClosedAdvanced",
                 "Complete", "CompleteAdvanced"
             ],
-            language: "en",
-            aspect: "Certificato",
+            language: "English",
+            aspect: "Standard Certified",
             totalSize: 13264,
             contentSize: 250,
             requiresCaptcha: false,
             allowsAgreement: true,
             commentsAllowed: true,
             accessControl: nil,
-            signatureNotice: nil,
+            signatureNotice: "Digital signature with: Submitted, SubmittedAdvanced, Committed, CommittedAdvanced, Closed, ClosedAdvanced, Complete, CompleteAdvanced",
             acceptOrRejectComments: "Accetta per test",
             costCentre: "Namirial",
             xmissionResult: true,
-            xmissionSummary: "The system successfully sent the message..."
+            xmissionSummary: "The system successfully sent the message...",
+            outcome: "Accepted",
+            customLayoutLogoUrl: nil
         )
     }
 
@@ -355,13 +491,12 @@ extension EmailItem {
     static var exampleFailed: EmailItem {
         EmailItem(
             id: "ex-failed-004",
-            senderName: "Namirial-test-LC",
-            senderEmail: "support@ecertia.com",
-            recipientName: "Destinatario",
-            recipientEmail: "destinatario@example.com",
+            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
+            sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
             emailObject: "Invio non riuscito",
-            emailDescription: "<p>Errore di trasmissione.</p>",
+            emailBody: "<p>Errore di trasmissione.</p>",
             date: "30/01/26",
             status: .failed,
             eventStatus: EmailEventStatus(
@@ -369,9 +504,25 @@ extension EmailItem {
                 readingStatus: .waiting,
                 contentStatus: .waiting
             ),
-            events: [],
+            events: [
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.pending),
+                    timestampUTC: Date().addingTimeInterval(-7200),
+                    description: "Message submitted and certified"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .sending,
+                    state: .sending(.failed),
+                    timestampUTC: Date().addingTimeInterval(-3600),
+                    description: "Transmission failed: Unrecoverable error: delivery failed."
+                )
+            ],
             attachments: [],
             affidavits: [],
+            certificationLevel: "Standard",
             sourceChannel: "Api",
             creationDate: "30/01/2026 10:12:00",
             admissionDate: "30/01/2026 10:12:05",
@@ -381,19 +532,21 @@ extension EmailItem {
             expirationDate: nil,
             onlineRetentionPeriod: 1,
             affidavitKinds: ["Submitted", "Failed"],
-            language: "en",
-            aspect: "Certificato",
+            language: "English",
+            aspect: "Standard Certified",
             totalSize: nil,
             contentSize: 90,
             requiresCaptcha: false,
             allowsAgreement: true,
-            commentsAllowed: true,
+            commentsAllowed: false,
             accessControl: nil,
-            signatureNotice: nil,
+            signatureNotice: "Digital signature with: Submitted, Failed",
             acceptOrRejectComments: nil,
             costCentre: "Namirial",
             xmissionResult: false,
-            xmissionSummary: "Unrecoverable error: delivery failed."
+            xmissionSummary: "Unrecoverable error: delivery failed.",
+            outcome: nil,
+            customLayoutLogoUrl: nil
         )
     }
 
@@ -401,13 +554,12 @@ extension EmailItem {
     static var exampleExpired: EmailItem {
         EmailItem(
             id: "ex-expired-005",
-            senderName: "Namirial-test-LC",
-            senderEmail: "support@ecertia.com",
-            recipientName: "Cliente",
-            recipientEmail: "cliente@example.com",
+            issuer:Contact(legalName: "Namirial", emailAddress: "torNamirial@outlook.it"),
+            recipient: Contact(legalName: "Studente", emailAddress: "torci.ado@outlook.it"),
+            sender: Contact(legalName: "Namirial-test-LC", emailAddress: "support@ecertia.com"),
             carbonCopy: [],
             emailObject: "Richiesta scaduta",
-            emailDescription: "<p>La richiesta non è stata accettata entro i tempi.</p>",
+            emailBody: "<p>La richiesta non è stata accettata entro i tempi.</p>",
             date: "31/01/26",
             status: .expired,
             eventStatus: EmailEventStatus(
@@ -415,9 +567,32 @@ extension EmailItem {
                 readingStatus: .waiting,
                 contentStatus: .rejected
             ),
-            events: [],
+            events: [
+                EmailEvent(
+                    id: UUID(),
+                    event: .preparation,
+                    state: .preparation(.pending),
+                    timestampUTC: Date().addingTimeInterval(-172800),
+                    description: "Message submitted and certified"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .sending,
+                    state: .sending(.delivered),
+                    timestampUTC: Date().addingTimeInterval(-86400),
+                    description: "Successfully delivered to mailbox"
+                ),
+                EmailEvent(
+                    id: UUID(),
+                    event: .closing,
+                    state: .closing(.closed),
+                    timestampUTC: Date().addingTimeInterval(-3600),
+                    description: "Certificate validity period expired"
+                )
+            ],
             attachments: [],
             affidavits: [],
+            certificationLevel: "Standard",
             sourceChannel: "Web",
             creationDate: "30/01/2026 09:00:00",
             admissionDate: "30/01/2026 09:00:02",
@@ -427,19 +602,21 @@ extension EmailItem {
             expirationDate: "31/01/2026 09:25:00",
             onlineRetentionPeriod: 1,
             affidavitKinds: ["Submitted", "Closed", "Complete"],
-            language: "en",
-            aspect: "Certificato",
+            language: "English",
+            aspect: "Standard Certified",
             totalSize: nil,
             contentSize: 140,
             requiresCaptcha: false,
             allowsAgreement: true,
-            commentsAllowed: true,
+            commentsAllowed: false,
             accessControl: nil,
-            signatureNotice: nil,
+            signatureNotice: "Digital signature with: Submitted, Closed, Complete",
             acceptOrRejectComments: nil,
             costCentre: "Namirial",
             xmissionResult: true,
-            xmissionSummary: "Delivered; tracking closed after TTL expired."
+            xmissionSummary: "Delivered; tracking closed after TTL expired.",
+            outcome: "Expired",
+            customLayoutLogoUrl: nil
         )
     }
 }

@@ -32,8 +32,8 @@ enum SendingStatus: Hashable {
     var tint: Color {
         switch self {
         case .waiting: return .gray
-        case .sent: return .green
-        case .failed: return .red
+        case .sent: return .lightGreen
+        case .failed: return .lightRed
         }
     }
     
@@ -61,7 +61,7 @@ enum ReadingStatus: Hashable {
     var tint: Color {
         switch self {
         case .waiting: return .gray
-        case .opened: return .green
+        case .opened: return .lightGreen
         }
     }
     
@@ -90,8 +90,8 @@ enum ContentStatus: Hashable {
     var tint: Color {
         switch self {
         case .waiting: return .gray
-        case .accepted: return .green
-        case .rejected: return .red
+        case .accepted: return .lightGreen
+        case .rejected: return .lightRed
         }
     }
     

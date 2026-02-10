@@ -10,7 +10,7 @@ import Foundation
 struct EviMail: Codable, Hashable {
     let uniqueId: String?
     let issuer: Contact?
-    let recipient: Contact?
+    let recipient: Contact
     let subject: String?
     let body: String?
     let state: String?
@@ -26,7 +26,9 @@ struct EviMail: Codable, Hashable {
     let readOn: String?
     let repliedOn: String?
     let acceptedOn: String?
+    let rejectedOn: String?
     let expiredOn: String?
+    let failedOn: String?
     
     let outcome: String?
     let timeToLive: Int?
@@ -34,7 +36,7 @@ struct EviMail: Codable, Hashable {
     let onlineRetentionPeriod: Int?
     let sourceChannel: String?
     
-    let carbonCopy: [CarbonCopyRecipient]?
+    let carbonCopy: [CarbonCopy]?
     let affidavitKinds: [String]?
     
     let affidavits: [Affidavit]?
@@ -46,6 +48,15 @@ struct EviMail: Codable, Hashable {
     let from: String?
     let customLayoutLogoUrl: String?
     let siteName: String?
+    
+    // Additional fields for complete modal support
+    let language: String?
+    let evidenceAccessControlMethod: String?
+    let evidenceAccessControlChallenge: String?
+    let acceptReasons: [String]?
+    let rejectReasons: [String]?
+    let commitmentOptions: [String]?
+    let deliveryMode: String?
     
     enum CodingKeys: String, CodingKey {
         case uniqueId
@@ -64,7 +75,9 @@ struct EviMail: Codable, Hashable {
         case readOn
         case repliedOn
         case acceptedOn
+        case rejectedOn
         case expiredOn
+        case failedOn
         case outcome
         case timeToLive
         case costCentre
@@ -80,20 +93,25 @@ struct EviMail: Codable, Hashable {
         case from
         case customLayoutLogoUrl
         case siteName
+        case language
+        case evidenceAccessControlMethod
+        case evidenceAccessControlChallenge
+        case acceptReasons
+        case rejectReasons
+        case commitmentOptions
+        case deliveryMode
     }
 }
 
 // MARK: - Contact
 
-struct Contact: Codable, Hashable {
-    let legalName: String?
+struct CarbonCopy: Codable, Hashable {
+    let name: String?
     let emailAddress: String
 }
 
-// MARK: - CarbonCopyRecipient
-
-struct CarbonCopyRecipient: Codable, Hashable {
-    let name: String
+struct Contact: Codable, Hashable {
+    let legalName: String?
     let emailAddress: String
 }
 
@@ -107,6 +125,21 @@ struct Affidavit: Codable, Hashable, Identifiable {
     let description: String?
     let kind: String
     let additionalData: [String: String]?
+    
+    // Timestamp parsed (computed property)
+    var timestamp: Date? {
+        guard let date = date else { return nil }
+        
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let parsedDate = formatter.date(from: date) {
+            return parsedDate
+        }
+        
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: date)
+    }
     
     // Conformità a Identifiable
     var id: String { uniqueId }

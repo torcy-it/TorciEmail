@@ -172,9 +172,9 @@ final class MailboxViewModel: ObservableObject {
         guard !query.isEmpty else { return filteredEmails }
 
         return filteredEmails.filter { email in
-            email.senderName.localizedCaseInsensitiveContains(query) ||
+            email.sender.legalName!.localizedCaseInsensitiveContains(query) ||
             email.emailObject.localizedCaseInsensitiveContains(query) ||
-            email.emailDescription.localizedCaseInsensitiveContains(query)
+            email.sender.emailAddress.localizedCaseInsensitiveContains(query)
         }
     }
 

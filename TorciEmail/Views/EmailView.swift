@@ -150,8 +150,8 @@ struct EmailView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(currentEmail.senderName)
-                        .font(.system(size: 24, weight: .semibold))
+                    Text("Issuer and Recipient")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(2)
 
@@ -163,28 +163,33 @@ struct EmailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    infoRow(label: "To", value: recipientLine(for: currentEmail))
-                    infoRow(label: "Cc", value: carbonCopyLine(for: currentEmail))
+                    infoRow(label: "Issuer", value: currentEmail.issuer.emailAddress)
+                    infoRow(label: "From", value: currentEmail.sender.emailAddress)
+                    infoRow(label: "To", value: currentEmail.recipient.emailAddress)
+                    infoRow(label: "Cc", value: currentEmail.carbonCopy.formatted)
                 }
             }
         }
     }
 
-    private func infoRow(label: String, value: String) -> some View {
-        HStack(spacing: 8) {
+    func infoRow(label: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
             Text(label)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.secondary)
-                .frame(width: 26, alignment: .leading)
+                .frame(width: 40, alignment: .leading)
+                .padding(.top, 2)
 
             Text(value)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.primary)
-                .lineLimit(1)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .truncationMode(.tail)
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 9)
         .padding(.horizontal, 10)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -317,7 +322,7 @@ struct EmailView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Text(bodyText(for: currentEmail))
+            Text(currentEmail.bodyPlainText)
                 .font(.system(size: 18, weight: .regular))
                 .foregroundStyle(.primary.opacity(0.85))
                 .lineSpacing(6)
@@ -335,20 +340,3 @@ struct EmailView: View {
     }
 }
 
-// MARK: - Helper Functions
-
-private func recipientLine(for email: EmailItem) -> String {
-    let cleaned = email.senderName
-        .lowercased()
-        .replacingOccurrences(of: " ", with: "")
-    return "\(cleaned)@example.com"
-}
-
-private func carbonCopyLine(for email: EmailItem) -> String {
-    guard !email.carbonCopy.isEmpty else { return "n/d" }
-    return email.carbonCopyFormatted
-}
-
-private func bodyText(for email: EmailItem) -> String {
-    email.emailDescription + "\n\n" + email.emailDescription
-}

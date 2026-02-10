@@ -40,12 +40,22 @@ enum EmailStatus: Hashable {
     
     var badgeBackground: Color {
         switch self {
-        case .new, .dispatched, .expired, .closed, .draft:
+
+        // NEUTRO / ATTESA
+        case .new, .draft, .closed:
             return .gray
-        case .ready, .sent, .delivered, .read, .replied, .submitted:
-            return .mint
-        case .failed:
-            return .red
+
+        // INVIO (teal)
+        case .ready, .sent, .dispatched, .delivered, .submitted:
+            return .tail
+
+        // LETTURA (sky)
+        case .read, .replied:
+            return .sky
+
+        // ERROR / NEGATIVO (red)
+        case .failed, .expired:
+            return .lightRed
         }
     }
 

@@ -1,8 +1,9 @@
 //
-//  DetailsEmailView.swift
+//  DetailsEmailModal.swift
 //  TorciEmail
 //
 //  Created by Adolfo Torcicollo on 04/02/26.
+//  Final version with all fields properly mapped
 //
 
 import SwiftUI
@@ -19,34 +20,33 @@ struct DetailsEmailModal: View {
                     // SECTION: GENERAL INFORMATION
                     DetailSection(title: "General Information") {
                         DetailRow(label: "Universal Locator", value: email.id)
-                        DetailRow(label: "Proof Type", value: "EmailMessage - Sending content with certification and delivery confirmation")
+                        DetailRow(label: "Proof Type", value: "MOCKUP")
                         DetailRow(label: "State", value: email.status.title, badge: email.status)
-                        DetailRow(label: "Result", value: email.status.isFinal ? "COMPLETED" : "NONE")
+                        DetailRow(label: "Result", value: email.outcome ?? "IN PROGRESS")
                     }
                     
                     // SECTION: SENDER AND RECIPIENTS
-                    DetailSection(title: "Sender and Recipients") {
-                        DetailRow(label: "Sender Address", value: "\(email.senderName) <\(email.senderEmail)>")
-                        DetailRow(label: "Sender Name or Company Name", value: email.senderName)
-                        DetailRow(label: "Recipient(s)", value: "\(email.recipientName) <\(email.recipientEmail)>")
+                    DetailSection(title: "Sender, Issuer and Recipients") {
+                        DetailRow(label: "Issuer", value: email.issuer.emailAddress)
+                        DetailRow(label: "Sender", value: email.sender.emailAddress)
+                        DetailRow(label: "Recipient", value: email.recipient.emailAddress)
                         
                         if !email.carbonCopy.isEmpty {
-                            DetailRow(label: "Carbon Copy Recipients", value: email.carbonCopyFormatted)
+                            DetailRow(label: "Carbon Copy Recipients", value: email.carbonCopy.formatted)
                         }
                     }
                     
                     // SECTION: CONTENT
                     DetailSection(title: "Content") {
                         DetailRow(label: "Subject", value: email.emailObject)
-                        DetailRow(label: "Message Body", value: email.emailDescription, isMultiline: true)
+                        DetailRow(label: "Body", value: email.bodyPlainText, isMultiline: true)
                     }
                     
                     // SECTION: TIMELINE
                     if hasTimelineData {
                         DetailSection(title: "Timeline") {
-                            if let sourceChannel = email.sourceChannel {
-                                DetailRow(label: "Source Channel", value: sourceChannel)
-                            }
+                            DetailRow(label: "Source Channel", value: email.sourceChannel ?? "Api")
+                            
                             if let creationDate = email.creationDate {
                                 DetailRow(label: "Creation Date", value: creationDate)
                             }
@@ -71,69 +71,85 @@ struct DetailsEmailModal: View {
                     // SECTION: CERTIFICATION
                     DetailSection(title: "Certification") {
                         DetailRow(label: "Online Retention Period", value: email.retentionPeriodFormatted)
-                        
-
                         DetailRow(label: "Certification Level", value: email.certificationLevel ?? "Standard")
+                        DetailRow(label: "Affidavit Profile", value: "MOCKUP")
                         
-                        
-                        DetailRow(label: "Affidavit Profile", value: "Content in creation and closing")
-                        DetailRow(
-                            label: "Receipt Notice Signature",
-                            value: email.signatureNotice ?? "The operation is performed if the message reference or locator is known"
-                        )
+                        if let signatureNotice = email.signatureNotice {
+                            DetailRow(label: "Receipt Notice Signature", value: signatureNotice)
+                        } else {
+                            DetailRow(
+                                label: "Receipt Notice Signature",
+                                value: "MOCKUP"
+                            )
+                        }
                     }
                     
                     // SECTION: OPTIONS
                     DetailSection(title: "Options") {
-                        DetailRow(label: "Requires Captcha", value: email.requiresCaptcha ? "Yes" : "Not required")
-                        DetailRow(label: "Agreement Possibility", value: email.allowsAgreement ? "Accept or reject" : "Not available")
-                        DetailRow(label: "Comments Allowed", value: email.commentsAllowed ? "Comments are allowed" : "Not allowed")
                         DetailRow(
-                            label: "Access Control",
-                            value: email.accessControl ?? "The operation is performed if a casual question is correctly answered for known information such as the recipient's email address"
+                            label: "Requires Captcha",
+                            value: email.requiresCaptcha ? "Yes - Visual verification required" : "Not required"
                         )
+                        DetailRow(
+                            label: "Agreement Possibility",
+                            value: email.allowsAgreement ? "Accept or reject" : "Not available"
+                        )
+                        DetailRow(
+                            label: "Comments Allowed",
+                            value: email.commentsAllowed ? "Comments are allowed" : "Not allowed"
+                        )
+    
+                        if let accessControl = email.accessControl {
+                            DetailRow(label: "Access Control", value: accessControl)
+                        } else {
+                            DetailRow(
+                                label: "Access Control",
+                                value: "Not specified"
+                            )
+                        }
                     }
                     
                     // SECTION: TECHNICAL DETAILS
                     DetailSection(title: "Technical Details") {
                         DetailRow(label: "Language", value: email.language)
-                        DetailRow(label: "Aspect", value: email.aspect)
+                        DetailRow(label: "Layout", value: email.aspect)
                         
                         if let totalSize = email.totalSize {
-                            DetailRow(label: "Total Size with Attachments", value: "\(totalSize) bytes")
+                            DetailRow(label: "Total Size with Attachments", value: formatBytes(totalSize))
                         }
                         if let contentSize = email.contentSize {
-                            DetailRow(label: "Content Size", value: "\(contentSize) bytes")
+                            DetailRow(label: "Content Size", value: formatBytes(contentSize))
                         }
                     }
-                    
-                    // SECTION: ATTACHMENTS
-                    if email.hasAttachments {
-                        DetailSection(title: "Attachments (\(email.attachmentCount))") {
-                            ForEach(email.attachments, id: \.id) { attachment in
-                                AttachmentRow(attachment: attachment)
-                            }
-                        }
-                    }
+                
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical, 20)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button ("Exit", systemImage: "xmark"){
+                    Button {
                         showDetailsModal = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
                     }
                 }
                 
+                ToolbarItem(placement: .principal) {
+                    Text("Details")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button ("Download Details", systemImage: "square.and.arrow.down"){
-                        // TODO: Download details
+                    Button {
                         print("Download details")
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 16, weight: .semibold))
                     }
                 }
             }
-            .navigationTitle("Details")
             .toolbarTitleDisplayMode(.inline)
         }
     }
@@ -148,6 +164,15 @@ struct DetailsEmailModal: View {
         email.openedDate != nil ||
         email.repliedDate != nil ||
         email.expirationDate != nil
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func formatBytes(_ bytes: Int) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
     }
 }
 
@@ -188,20 +213,22 @@ struct DetailRow: View {
                 .foregroundColor(.secondary)
             
             if let badge = badge {
-                Text(value)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(badge.badgeBackground.opacity(0.3))
-                    )
+                HStack {
+                    Text(value)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(badge.badgeBackground.opacity(0.3))
+                )
             } else {
                 Text(value)
                     .font(.system(size: 16))
                     .foregroundColor(.primary)
-                    .lineLimit(isMultiline ? nil : 2)
+                    .lineLimit(isMultiline ? nil : 3)
                     .fixedSize(horizontal: false, vertical: isMultiline)
             }
         }
@@ -209,43 +236,7 @@ struct DetailRow: View {
     }
 }
 
-// MARK: - Attachment Row
-struct AttachmentRow: View {
-    let attachment: EmailAttachment
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "doc.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.blue)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(attachment.name)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Text(attachment.sizeLabel)
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            Button {
-                print("Download: \(attachment.name)")
-            } label: {
-                Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.blue)
-            }
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(.systemBackground))
-        )
-    }
-}
+
 
 // MARK: - Preview
 #Preview {
@@ -254,4 +245,3 @@ struct AttachmentRow: View {
         email: .example
     )
 }
-

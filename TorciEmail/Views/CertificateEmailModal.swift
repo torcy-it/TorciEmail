@@ -2,7 +2,7 @@
 //  CertificateEmailModal.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 04/02/26.
+//  Fixed to match EviMailMapper event structure
 //
 
 import SwiftUI
@@ -14,26 +14,34 @@ struct CertificateEmailModal: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 0) {
                     
-                    // Certificate Info Card
-                    certificateInfoCard
-                        .padding(.horizontal, 18)
-                        .padding(.top, 20)
+                    // Certificate Header
+                    certificateHeader
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
+                    
+                    // Divider
+                    Rectangle()
+                        .fill(Color(.separator).opacity(0.5))
+                        .frame(height: 1)
+                        .padding(.horizontal, 20)
                     
                     // Timeline Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Timeline Header
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Timeline of Certified Events")
-                                .font(.system(size: 24, weight: .bold))
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Section Header
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Event Timeline")
+                                .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(.primary)
                             
-                            Text("\(email.events.count) legal affidavits generated")
+                            Text("\(email.events.count) certified events")
                                 .font(.system(size: 15))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
                         
                         // Timeline Events
                         if email.events.isEmpty {
@@ -43,32 +51,42 @@ struct CertificateEmailModal: View {
                         }
                     }
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 32)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(.systemBackground))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("", systemImage: "xmark") {
+                    Button {
                         showCertificatesModal = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.secondary)
                     }
                 }
                 
                 ToolbarItem(placement: .principal) {
-                    Text("Certified Events")
+                    Text("Certificates")
                         .font(.system(size: 17, weight: .semibold))
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button("Export Certificate", systemImage: "square.and.arrow.up") {
-                            print("📤 Export certificate")
+                        Button {
+                            print("Export certificate")
+                        } label: {
+                            Label("Export Certificate", systemImage: "square.and.arrow.up")
                         }
                         
-                        Button("Share", systemImage: "square.and.arrow.up") {
-                            print("📤 Share")
+                        Button {
+                            print("Share")
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -76,113 +94,153 @@ struct CertificateEmailModal: View {
         }
     }
     
-    // MARK: - Certificate Info Card
+    // MARK: - Certificate Header
     
-    private var certificateInfoCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header with icon
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Certification Profile")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+    private var certificateHeader: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Icon and Title
+            HStack(alignment: .top, spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(Color.strongPrimary.opacity(0.3))
+                        .frame(width: 56, height: 56)
                     
-                    Text(email.certificationLevel ?? "Standard")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.primary)
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 26))
+                        .foregroundColor(.sky)
                 }
                 
-                Spacer()
-                
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.blue)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Certified Email")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text(email.certificationLevel ?? "Standard Certification")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
             }
             
-            Divider()
-            
-            // Certificate Details
-            VStack(spacing: 12) {
-                InfoRow(label: "Delivery Mode", value: email.sourceChannel ?? "Api")
-                InfoRow(label: "Expires", value: email.expirationDate ?? "N/D")
-                InfoRow(label: "Unique ID", value: email.id, isMonospace: true)
+            // Certificate Details Grid
+            VStack(spacing: 16) {
+                HStack {
+                    CertificateDetailCell(
+                        label: "Unique ID",
+                        value: formatUniqueId(email.id)
+                    )
+                    
+                    Spacer()
+                    
+                    CertificateDetailCell(
+                        label: "Status",
+                        value: email.status.title,
+                        valueColor: statusColor(email.status)
+                    )
+                }
+                
+                HStack {
+                    CertificateDetailCell(
+                        label: "Expires",
+                        value: email.expirationDate ?? "N/A"
+                    )
+                    
+                    Spacer()
+                    
+                    CertificateDetailCell(
+                        label: "Events",
+                        value: "\(email.events.count)"
+                    )
+                }
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.blue.opacity(0.1))
-        )
     }
     
     // MARK: - Timeline Events
     
     @ViewBuilder
     private var timelineEvents: some View {
-        let events = email.events
+        let sortedEvents = email.events.sorted { $0.timestampUTC < $1.timestampUTC }
         
         VStack(spacing: 0) {
-            ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
-                ExpandableCertificateEventRow(
+            ForEach(Array(sortedEvents.enumerated()), id: \.element.id) { index, event in
+                ProfessionalEventRow(
                     event: event,
                     isFirst: index == 0,
-                    isLast: index == events.count - 1
+                    isLast: index == sortedEvents.count - 1
                 )
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Empty State
     
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "doc.badge.clock")
-                .font(.system(size: 50))
-                .foregroundColor(.gray)
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary.opacity(0.6))
             
-            Text("No Events Yet")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.gray)
-            
-            Text("Certified events will appear here as they occur")
-                .font(.system(size: 14))
+            Text("No Events Recorded")
+                .font(.system(size: 17, weight: .medium))
                 .foregroundColor(.secondary)
+            
+            Text("Certified events will appear here once they occur")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary.opacity(0.8))
                 .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.vertical, 80)
     }
     
-
-}
-
-// MARK: - Info Row
-
-struct InfoRow: View {
-    let label: String
-    let value: String
-    var isMonospace: Bool = false
+    // MARK: - Helper Methods
     
-    var body: some View {
-        HStack(alignment: .top) {
-            Text(label)
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(isMonospace ? .system(size: 13, design: .monospaced) : .system(size: 14, weight: .medium))
-                .foregroundColor(.primary)
-                .multilineTextAlignment(.trailing)
+    private func formatUniqueId(_ id: String) -> String {
+        if id.count > 12 {
+            return String(id.prefix(8)) + "..." + String(id.suffix(4))
+        }
+        return id
+    }
+    
+    private func statusColor(_ status: EmailStatus) -> Color {
+        switch status {
+        case .sent, .delivered, .read, .replied: return .green
+        case .failed: return .red
+        case .new, .ready: return .orange
+        case .expired, .closed: return .gray
+        default: return .blue
         }
     }
 }
 
-// MARK: - Expandable Certificate Event Row
+// MARK: - Certificate Detail Cell
 
-struct ExpandableCertificateEventRow: View {
+struct CertificateDetailCell: View {
+    let label: String
+    let value: String
+    var valueColor: Color = .primary
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+            
+            Text(value)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(valueColor)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Professional Event Row
+
+struct ProfessionalEventRow: View {
     let event: EmailEvent
     let isFirst: Bool
     let isLast: Bool
@@ -191,205 +249,250 @@ struct ExpandableCertificateEventRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            // Timeline Line
-            timelineLine
+            // Timeline indicator
+            timelineIndicator
             
-            // Event Content
+            // Event content
             VStack(alignment: .leading, spacing: 0) {
-                // Main Event Button
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    eventHeader
-                }
-                .buttonStyle(.plain)
+                eventCard
                 
-                // Expanded Details
-                if isExpanded {
-                    eventDetails
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                if !isLast {
+                    Spacer()
+                        .frame(height: 16)
                 }
-                
-                Spacer()
-                    .frame(height: isLast ? 0 : 24)
             }
         }
     }
     
-    // MARK: - Timeline Line
+    // MARK: - Timeline Indicator
     
-    private var timelineLine: some View {
+    private var timelineIndicator: some View {
         VStack(spacing: 0) {
+            // Top line
             if !isFirst {
                 Rectangle()
-                    .fill(eventColor.opacity(0.3))
-                    .frame(width: 3, height: 24)
+                    .fill(eventColor.opacity(0.25))
+                    .frame(width: 2, height: 20)
             }
             
+            // Circle
             ZStack {
                 Circle()
-                    .fill(eventColor.opacity(0.2))
-                    .frame(width: 44, height: 44)
+                    .fill(eventColor.opacity(0.15))
+                    .frame(width: 32, height: 32)
+                
+                Circle()
+                    .stroke(eventColor, lineWidth: 2)
+                    .frame(width: 32, height: 32)
                 
                 Image(systemName: eventIcon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(eventColor)
             }
             
+            // Bottom line
             if !isLast {
                 Rectangle()
-                    .fill(eventColor.opacity(0.3))
-                    .frame(width: 3)
+                    .fill(eventColor.opacity(0.25))
+                    .frame(width: 2)
                     .frame(maxHeight: .infinity)
             }
         }
-        .frame(width: 44)
+        .frame(width: 32)
     }
     
-    // MARK: - Event Header
+    // MARK: - Event Card
     
-    private var eventHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Timestamp
-            Text(formattedTimestamp)
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
-            
-            // Event Title
-            HStack {
-                Text(eventTitle)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.secondary)
+    private var eventCard: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                isExpanded.toggle()
             }
-            
-            // Certificate ID & Status
-            HStack(spacing: 12) {
-                Label(affidavitId, systemImage: "doc.text")
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(.secondary)
-                
-                Label("VERIFIED", systemImage: "checkmark.circle")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.green)
-            }
-            
-            // Short Description
-            Text(eventDescription)
-                .font(.system(size: 15))
-                .foregroundColor(.secondary)
-                .lineLimit(isExpanded ? nil : 2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-        )
-    }
-    
-    // MARK: - Event Details
-    
-    private var eventDetails: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Divider()
-                .padding(.horizontal, 16)
-            
-            VStack(alignment: .leading, spacing: 12) {
-                DetailItem(label: "Event Type", value: eventTypeDetail)
-                DetailItem(label: "Timestamp", value: fullTimestamp)
-                DetailItem(label: "Status", value: "Verified")
-                
-                if let additionalInfo = additionalEventInfo {
-                    DetailItem(label: "Details", value: additionalInfo)
-                }
-            }
-            .padding(.horizontal, 16)
-            
-            // Action Buttons
-            HStack(spacing: 12) {
-                Button {
-                    print("Show details for event: \(event.id)")
-                } label: {
-                    HStack {
-                        Image(systemName: "doc.text.magnifyingglass")
-                        Text("Show details")
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                // Main content
+                VStack(alignment: .leading, spacing: 12) {
+                    // Timestamp
+                    Text(formattedTimestamp)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    // Title and chevron
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(eventTitle)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            if !event.description.isEmpty {
+                                Text(event.description)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(isExpanded ? nil : 2)
+                            } else {
+                                Text(defaultDescription)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(isExpanded ? nil : 2)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 2)
                     }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
                 }
+                .padding(16)
                 
-                Spacer()
-                
-                Button {
-                    print("Download affidavit for event: \(event.id)")
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.down.doc")
-                        Text("Download")
+                // Expanded details
+                if isExpanded {
+                    Divider()
+                        .padding(.horizontal, 16)
+                    
+                    VStack(alignment: .leading, spacing: 14) {
+                        // Event type
+                        EventDetailRow(label: "Event Type", value: eventTypeDetail)
+                        
+                        // Full timestamp
+                        EventDetailRow(label: "Timestamp", value: fullTimestamp)
+                        
+                        // Affidavit ID
+                        EventDetailRow(label: "Affidavit ID", value: affidavitId, isMonospaced: true)
+                        
+                        // Status
+                        HStack {
+                            Text("Status")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 12))
+                                Text("VERIFIED")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(Color.green.opacity(0.1))
+                            )
+                        }
+                        
+                        // Additional info
+                        if let additionalInfo = additionalEventInfo {
+                            EventDetailRow(label: "Details", value: additionalInfo)
+                        }
                     }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
+                    .padding(16)
+                    .padding(.top, 4)
+                    
+                    // Actions
+                    Divider()
+                        .padding(.horizontal, 16)
+                    
+                    HStack(spacing: 16) {
+                        Button {
+                            print("📄 View details for: \(event.id)")
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "doc.text.magnifyingglass")
+                                    .font(.system(size: 14))
+                                Text("View Details")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(.blue)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            print("⬇️ Download affidavit: \(event.id)")
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.down.doc")
+                                    .font(.system(size: 14))
+                                Text("Download")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(16)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
+            )
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-        )
+        .buttonStyle(.plain)
     }
     
     // MARK: - Computed Properties
     
     private var eventColor: Color {
         switch event.event {
-        case .preparation: return .blue
+        case .preparation:
+            return .blue
         case .sending:
             if case .sending(.failed) = event.state {
                 return .red
             }
             return .green
-        case .delivery: return .orange
-        case .reading: return .purple
+        case .reading:
+            if case .reading(.waiting) = event.state {
+                return .orange
+            }
+            return .purple
         case .decision:
             if case .decision(.contentRejected) = event.state {
                 return .red
             }
-            if case .decision(.expired) = event.state {
-                return .gray
+            if case .decision(.contentWaiting) = event.state {
+                return .orange
             }
             return .green
+        case .closing:
+            return .gray
         }
     }
     
     private var eventIcon: String {
         switch event.event {
-        case .preparation: return "doc.text.fill"
+        case .preparation:
+            return "doc.text"
         case .sending:
             if case .sending(.failed) = event.state {
-                return "exclamationmark.triangle.fill"
+                return "xmark"
             }
-            return "paperplane.fill"
-        case .delivery: return "shippingbox.fill"
-        case .reading: return "envelope.open.fill"
+            return "paperplane"
+        case .reading:
+            if case .reading(.waiting) = event.state {
+                return "hourglass"
+            }
+            return "envelope.open"
         case .decision:
             if case .decision(.contentRejected) = event.state {
-                return "xmark.circle.fill"
+                return "xmark"
             }
-            if case .decision(.expired) = event.state {
-                return "clock.badge.xmark.fill"
+            if case .decision(.contentWaiting) = event.state {
+                return "clock"
             }
-            return "checkmark.circle.fill"
+            return "checkmark"
+        case .closing:
+            return "lock"
         }
     }
     
@@ -401,51 +504,51 @@ struct ExpandableCertificateEventRow: View {
         case .sending(.dispatched): return "Message Dispatched"
         case .sending(.delivered): return "Message Delivered"
         case .sending(.failed): return "Transmission Failed"
-        case .delivery(.waiting): return "Awaiting Opening"
+        case .reading(.waiting): return "Awaiting Opening"
         case .reading(.opened): return "Message Opened"
-        case .decision(.waitingDecision): return "Awaiting Response"
+        case .decision(.contentWaiting): return "Awaiting Response"
         case .decision(.contentAccepted): return "Content Accepted"
         case .decision(.contentRejected): return "Content Rejected"
-        case .decision(.expired): return "Certificate Expired"
+        case .closing(.closed): return "Certificate Closed"
         }
     }
     
-    private var eventDescription: String {
+    private var defaultDescription: String {
         switch event.state {
         case .preparation(.pending):
-            return "Message submitted with additional graphical certificate attached"
+            return "Message certified and submitted for processing"
         case .preparation(.ready):
-            return "Message certified and ready for transmission"
+            return "Message ready for transmission to recipient"
         case .sending(.sent):
-            return "Confirms whether message was successfully sent to recipient's mail server"
+            return "Transmission status confirmed by mail server"
         case .sending(.dispatched):
-            return "Message handed over to mail service provider"
+            return "Message dispatched through mail service provider"
         case .sending(.delivered):
-            return "Message successfully delivered to recipient's mailbox"
+            return "Successfully delivered to recipient's mailbox"
         case .sending(.failed):
-            return "An error occurred during the transmission process"
-        case .delivery(.waiting):
-            return "Message delivered, awaiting recipient to open it"
+            return "Transmission error occurred during delivery"
+        case .reading(.waiting):
+            return "Delivered, awaiting recipient to open message"
         case .reading(.opened):
-            return "The recipient has opened and read the email"
-        case .decision(.waitingDecision):
-            return "Awaiting recipient's response to the message"
+            return "Recipient has opened and viewed the message"
+        case .decision(.contentWaiting):
+            return "Awaiting recipient's formal response"
         case .decision(.contentAccepted):
-            return "Recipient has accepted the message content"
+            return "Recipient has formally accepted the content"
         case .decision(.contentRejected):
-            return "Recipient has rejected the message content"
-        case .decision(.expired):
-            return "Certificate validity period has expired"
+            return "Recipient has formally rejected the content"
+        case .closing(.closed):
+            return "Certificate validity period has ended"
         }
     }
     
     private var eventTypeDetail: String {
-        switch event.state {
-        case .preparation: return "Advanced Certification"
-        case .sending: return "Transmission Status"
-        case .delivery: return "Delivery Confirmation"
-        case .reading: return "Read Receipt"
-        case .decision: return "Response Status"
+        switch event.event {
+        case .preparation: return "Certification"
+        case .sending: return "Transmission"
+        case .reading: return "Delivery/Reading"
+        case .decision: return "Response"
+        case .closing: return "Validity"
         }
     }
     
@@ -457,47 +560,53 @@ struct ExpandableCertificateEventRow: View {
     
     private var formattedTimestamp: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d, yyyy 'at' HH:mm"
+        formatter.dateFormat = "MMM d, yyyy • HH:mm"
         return formatter.string(from: event.timestampUTC)
     }
     
     private var fullTimestamp: String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        formatter.timeStyle = .medium
+        formatter.dateFormat = "EEEE, MMMM d, yyyy 'at' HH:mm:ss"
         return formatter.string(from: event.timestampUTC)
     }
     
     private var additionalEventInfo: String? {
         switch event.state {
         case .sending(.sent):
-            return "Message successfully transmitted through secure channels"
+            return "Message successfully transmitted through secure channels with full audit trail"
         case .reading(.opened):
-            return "Recipient accessed the message content"
+            return "Recipient accessed and viewed the certified message content"
         case .decision(.contentAccepted):
-            return "Formal acknowledgment of receipt and acceptance"
+            return "Formal acknowledgment of receipt and acceptance of terms"
+        case .decision(.contentRejected):
+            return "Recipient has formally declined or rejected the proposed content"
         default:
             return nil
         }
     }
 }
 
-// MARK: - Detail Item
+// MARK: - Event Detail Row
 
-struct DetailItem: View {
+struct EventDetailRow: View {
     let label: String
     let value: String
+    var isMonospaced: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
-                .textCase(.uppercase)
+            
+            Spacer()
             
             Text(value)
-                .font(.system(size: 15))
+                .font(isMonospaced ?
+                    .system(size: 13, design: .monospaced) :
+                    .system(size: 14, weight: .medium))
                 .foregroundColor(.primary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }

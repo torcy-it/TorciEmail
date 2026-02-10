@@ -13,26 +13,28 @@ struct EmailEvent: Hashable {
     let event: EventType
     let state: EventState
     let timestampUTC: Date
+    let description: String
     
     init(
         id: UUID = UUID(),
         event: EventType,
         state: EventState,
-        timestampUTC: Date
+        timestampUTC: Date,
+        description: String
     ) {
         self.id = id
         self.event = event
         self.state = state
         self.timestampUTC = timestampUTC
+        self.description = description 
     }
 }
-
 enum EventType: Hashable {
     case preparation    // Preparazione/attesa invio
     case sending        // Invio in corso
-    case delivery       // Attesa apertura
     case reading        // Apertura/lettura
     case decision       // Decisione sul contenuto
+    case closing        //fine del monitoraggio
     
     func assetName(for state: EventState) -> String {
         switch (self, state) {
@@ -52,8 +54,8 @@ enum EventType: Hashable {
         case (.sending, .sending(.failed)):
             return "IconRejectedEnv"
             
-        // DELIVERY (attesa apertura)
-        case (.delivery, .delivery(.waiting)):
+        // READING (attesa apertura)
+        case (.reading, .reading(.waiting)):
             return "IconWaitOpenEnv"
             
         // READING (apertura)
@@ -61,17 +63,15 @@ enum EventType: Hashable {
             return "IconOpenEnv"
             
         // DECISION (accettazione/rifiuto contenuto)
-        case (.decision, .decision(.waitingDecision)):
+        case (.decision, .decision(.contentWaiting)):
             return "IconContentWait"
         case (.decision, .decision(.contentAccepted)):
             return "IconContentAcc"
         case (.decision, .decision(.contentRejected)):
             return "IconContentRej"
-        case (.decision, .decision(.expired)):
-            return "IconContentRej"
             
         default:
-            return "IconWaitEnv" // Fallback
+            return "IconWaitEnv"
         }
     }
     
@@ -81,35 +81,31 @@ enum EventType: Hashable {
         case (.preparation, .preparation(.pending)):
             return .gray
         case (.preparation, .preparation(.ready)):
-            return .gray
+            return .tail
             
         // SENDING
         case (.sending, .sending(.sent)):
-            return .green
+            return .tail
         case (.sending, .sending(.dispatched)):
-            return .green
+            return .tail
         case (.sending, .sending(.delivered)):
-            return .green
+            return .tail
         case (.sending, .sending(.failed)):
-            return .red
-            
-        // DELIVERY
-        case (.delivery, .delivery(.waiting)):
-            return .gray
+            return .lightRed
             
         // READING
+        case (.reading, .reading(.waiting)):
+            return .gray
         case (.reading, .reading(.opened)):
-            return .green
+            return .lightGreen
             
         // DECISION
-        case (.decision, .decision(.waitingDecision)):
+        case (.decision, .decision(.contentWaiting)):
             return .gray
         case (.decision, .decision(.contentAccepted)):
-            return .green
+            return .sky
         case (.decision, .decision(.contentRejected)):
-            return .red
-        case (.decision, .decision(.expired)):
-            return .gray
+            return .sky
             
         default:
             return .gray
@@ -130,17 +126,17 @@ enum EventType: Hashable {
             return "Consegnato"
         case (.sending, .sending(.failed)):
             return "Invio fallito"
-        case (.delivery, .delivery(.waiting)):
+        case (.reading, .reading(.waiting)):
             return "In attesa di apertura"
         case (.reading, .reading(.opened)):
             return "Aperto"
-        case (.decision, .decision(.waitingDecision)):
+        case (.decision, .decision(.contentWaiting)):
             return "In attesa di risposta"
         case (.decision, .decision(.contentAccepted)):
             return "Contenuto accettato"
         case (.decision, .decision(.contentRejected)):
             return "Contenuto rifiutato"
-        case (.decision, .decision(.expired)):
+        case (.closing, .closing(.closed)):
             return "Scaduto"
         default:
             return "Stato sconosciuto"
@@ -151,9 +147,9 @@ enum EventType: Hashable {
 enum EventState: Hashable {
     case preparation(PreparationState)
     case sending(SendingState)
-    case delivery(DeliveryState)
     case reading(ReadingState)
     case decision(DecisionState)
+    case closing(ClosingState)
 }
 
 enum PreparationState: Hashable {
@@ -168,17 +164,18 @@ enum SendingState: Hashable {
     case failed     // Fallito
 }
 
-enum DeliveryState: Hashable {
-    case waiting    // In attesa di apertura
-}
-
 enum ReadingState: Hashable {
+    case waiting     //in attesa di lettura
     case opened     // Aperto
 }
 
 enum DecisionState: Hashable {
-    case waitingDecision    // In attesa di decisione
+    case contentWaiting    // In attesa di decisione
     case contentAccepted    // Contenuto accettato
     case contentRejected    // Contenuto rifiutato
-    case expired            // Scaduto
 }
+
+enum ClosingState: Hashable {
+    case closed
+}
+

@@ -15,7 +15,7 @@ struct EmailRow: View {
             HStack(alignment: .top, spacing: 4) {  // Spacing minimo di 4px
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(email.senderName)
+                    Text(email.sender.legalName ?? "Unknown")
                         .font(.system(size: 22, weight: .semibold))
                         .lineLimit(1)
                         
@@ -24,7 +24,7 @@ struct EmailRow: View {
                         .font(.system(size: 20, weight: .regular))
                         .lineLimit(1)
 
-                    Text(email.emailDescription)
+                    Text(email.bodyPlainText)
                         .font(.system(size: 16))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
