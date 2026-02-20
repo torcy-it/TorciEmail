@@ -1,10 +1,3 @@
-//
-//  EmailDraft.swift
-//  TorciEmail
-//
-//  Created by Adolfo Torcicollo on 08/02/26.
-//
-
 import Foundation
 
 /// Modello per creare una nuova email (domain model)
