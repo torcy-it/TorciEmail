@@ -2,12 +2,13 @@
 //  ScrollEdgeTuning.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 23/01/26.
+//  ViewModifier condiviso per uniformare effetto bordo scroll.
 //
 
 
 import SwiftUI
 
+/// Applica stile soft allo scroll edge superiore.
 struct ScrollEdgeTuning: ViewModifier {
     func body(content: Content) -> some View {
         content.scrollEdgeEffectStyle(.soft, for: .top)

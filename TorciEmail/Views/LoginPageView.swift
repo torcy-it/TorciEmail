@@ -2,14 +2,17 @@
 //  LoginPageView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 20/01/26.
+//  Schermata di autenticazione utente.
+//  Raccoglie credenziali e avvia il flusso login.
 //
 
 import SwiftUI
 
+/// View di login con binding diretto ad `AuthViewModel`.
 struct LoginPageView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
+    /// Costruisce il form di autenticazione e gestione errori.
     var body: some View {
         VStack(spacing: 70) {
             

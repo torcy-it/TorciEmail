@@ -2,18 +2,20 @@
 //  KeychainManager.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Gestore minimale per persistenza sicura del token JWT nel Keychain.
 //
 
 import Foundation
 import Security
 
-class KeychainManager {
+/// Gestisce salvataggio, lettura e cancellazione del token in Keychain.
+final class KeychainManager {
     static let shared = KeychainManager()
     private let tokenKey = "com.torciemail.authToken"
     
     private init() {}
     
+    /// Salva il token JWT nel keychain sovrascrivendo eventuale valore precedente.
     func saveToken(_ token: String) {
         let data = Data(token.utf8)
         
@@ -23,17 +25,13 @@ class KeychainManager {
             kSecValueData as String: data
         ]
         
-        // Rimuovi eventuale token esistente
         SecItemDelete(query as CFDictionary)
         
-        // Aggiungi nuovo token
-        let status = SecItemAdd(query as CFDictionary, nil)
-        
-        if status != errSecSuccess {
-            print("Failed to save token to keychain: \(status)")
-        }
+        _ = SecItemAdd(query as CFDictionary, nil)
     }
     
+    /// Legge il token JWT dal keychain.
+    /// - Returns: Token se presente, altrimenti `nil`.
     func getToken() -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -53,6 +51,7 @@ class KeychainManager {
         return token
     }
     
+    /// Rimuove il token JWT dal keychain.
     func deleteToken() {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

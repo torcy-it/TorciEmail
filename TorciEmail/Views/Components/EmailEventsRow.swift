@@ -2,11 +2,13 @@
 //  EmailEventsView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 04/02/26.
+//  Componente sintetico stato eventi.
+//  Mostra le tre icone invio/lettura/contenuto nella mailbox.
 //
 
 import SwiftUI
 
+/// Riga compatta con i tre stati principali del ciclo di vita email.
 struct EmailEventsRow: View {
     let eventStatus: EmailEventStatus
     
@@ -33,7 +35,7 @@ struct EmailEventsRow: View {
     }
 }
 
-// Vista singola icona
+/// Singola icona evento con tint dinamico.
 struct EventIconView: View {
     let assetName: String
     let tint: Color

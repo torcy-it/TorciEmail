@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Riga selezionabile usata nelle card categorie.
 struct SelectRow: Identifiable, Hashable {
     let id = UUID()
     let icon: String          // SF Symbol name
@@ -10,6 +11,7 @@ enum CardStyle {
     case flat
 }
 
+/// Modale selezione categoria comunicazione e tipo mailbox.
 struct CategoriesView: View {
 
 
@@ -31,6 +33,7 @@ struct CategoriesView: View {
     @State private var selectedTypeTitle: String = "My EviMail"
     @Binding var showModal: Bool
     
+    /// Mostra due sezioni selezionabili con conferma finale.
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 28) {
@@ -92,6 +95,7 @@ struct CategoriesView: View {
 
 
 
+/// Card riusabile per gruppi di opzioni selezionabili.
 private struct SelectCard: View {
     let rows: [SelectRow]
     @Binding var selectedTitle: String

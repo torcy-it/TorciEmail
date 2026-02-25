@@ -2,7 +2,8 @@
 //  EviMail.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Modelli DTO di risposta API per EviMail, allegati e affidavits.
+//  Questi tipi rappresentano il payload remoto prima del mapping nel dominio UI.
 //
 
 import Foundation
@@ -125,8 +126,9 @@ struct Affidavit: Codable, Hashable, Identifiable {
     let description: String?
     let kind: String
     let additionalData: [String: String]?
+    let bytes: String?
     
-    // Timestamp parsed (computed property)
+    /// Timestamp parsato da stringa ISO8601 (con o senza fractional seconds).
     var timestamp: Date? {
         guard let date = date else { return nil }
         
@@ -141,7 +143,6 @@ struct Affidavit: Codable, Hashable, Identifiable {
         return formatter.date(from: date)
     }
     
-    // Conformità a Identifiable
     var id: String { uniqueId }
     
     enum CodingKeys: String, CodingKey {
@@ -152,10 +153,51 @@ struct Affidavit: Codable, Hashable, Identifiable {
         case description
         case kind
         case additionalData
+        case bytes
+        case bytesLegacy = "Bytes"
+        case blob
+        case blobLegacy = "Blob"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        uniqueId = try container.decode(String.self, forKey: .uniqueId)
+        date = try container.decodeIfPresent(String.self, forKey: .date)
+        evidenceUniqueId = try container.decodeIfPresent(String.self, forKey: .evidenceUniqueId)
+        partyUniqueId = try container.decodeIfPresent(String.self, forKey: .partyUniqueId)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        kind = try container.decode(String.self, forKey: .kind)
+        additionalData = try container.decodeIfPresent([String: String].self, forKey: .additionalData)
+        
+        let bytesFromContainer = try container.decodeIfPresent(String.self, forKey: .bytes)
+            ?? container.decodeIfPresent(String.self, forKey: .bytesLegacy)
+            ?? container.decodeIfPresent(String.self, forKey: .blob)
+            ?? container.decodeIfPresent(String.self, forKey: .blobLegacy)
+        
+        let bytesFromAdditionalData = additionalData?["bytes"]
+            ?? additionalData?["Bytes"]
+            ?? additionalData?["blob"]
+            ?? additionalData?["Blob"]
+        
+        bytes = bytesFromContainer ?? bytesFromAdditionalData
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(uniqueId, forKey: .uniqueId)
+        try container.encodeIfPresent(date, forKey: .date)
+        try container.encodeIfPresent(evidenceUniqueId, forKey: .evidenceUniqueId)
+        try container.encodeIfPresent(partyUniqueId, forKey: .partyUniqueId)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encode(kind, forKey: .kind)
+        try container.encodeIfPresent(additionalData, forKey: .additionalData)
+        try container.encodeIfPresent(bytes, forKey: .bytes)
     }
 }
 
-// MARK: - EviMailAttachment (dall'API)
+// MARK: - EviMailAttachment
 
 struct EviMailAttachment: Codable, Hashable, Identifiable {
     let uniqueId: String
@@ -169,8 +211,8 @@ struct EviMailAttachment: Codable, Hashable, Identifiable {
     let contentEncoding: String?
     let contentLength: Int?
     let hash: String?
+    let data: String?
     
-    // Conformità a Identifiable
     var id: String { uniqueId }
     
     enum CodingKeys: String, CodingKey {
@@ -185,5 +227,54 @@ struct EviMailAttachment: Codable, Hashable, Identifiable {
         case contentEncoding
         case contentLength
         case hash
+        case dataUpper = "Data"
+        case dataLower = "data"
+        case bytes
+        case bytesLegacy = "Bytes"
+        case blob
+        case blobLegacy = "Blob"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        uniqueId = try container.decode(String.self, forKey: .uniqueId)
+        creationDate = try container.decodeIfPresent(String.self, forKey: .creationDate)
+        evidenceUniqueId = try container.decodeIfPresent(String.self, forKey: .evidenceUniqueId)
+        contentId = try container.decodeIfPresent(String.self, forKey: .contentId)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        filename = try container.decode(String.self, forKey: .filename)
+        mimeType = try container.decode(String.self, forKey: .mimeType)
+        contentDisposition = try container.decodeIfPresent(String.self, forKey: .contentDisposition)
+        contentEncoding = try container.decodeIfPresent(String.self, forKey: .contentEncoding)
+        contentLength = try container.decodeIfPresent(Int.self, forKey: .contentLength)
+        hash = try container.decodeIfPresent(String.self, forKey: .hash)
+        let dataFromLower = try container.decodeIfPresent(String.self, forKey: .dataLower)
+        let dataFromUpper = try container.decodeIfPresent(String.self, forKey: .dataUpper)
+        let dataFromBytes = try container.decodeIfPresent(String.self, forKey: .bytes)
+        let dataFromBytesLegacy = try container.decodeIfPresent(String.self, forKey: .bytesLegacy)
+        let dataFromBlob = try container.decodeIfPresent(String.self, forKey: .blob)
+        let dataFromBlobLegacy = try container.decodeIfPresent(String.self, forKey: .blobLegacy)
+        
+        data = dataFromLower ?? dataFromUpper ?? dataFromBytes ?? dataFromBytesLegacy ?? dataFromBlob ?? dataFromBlobLegacy
+    }
+    
+ 
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(uniqueId, forKey: .uniqueId)
+        try container.encodeIfPresent(creationDate, forKey: .creationDate)
+        try container.encodeIfPresent(evidenceUniqueId, forKey: .evidenceUniqueId)
+        try container.encodeIfPresent(contentId, forKey: .contentId)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encode(filename, forKey: .filename)
+        try container.encode(mimeType, forKey: .mimeType)
+        try container.encodeIfPresent(contentDisposition, forKey: .contentDisposition)
+        try container.encodeIfPresent(contentEncoding, forKey: .contentEncoding)
+        try container.encodeIfPresent(contentLength, forKey: .contentLength)
+        try container.encodeIfPresent(hash, forKey: .hash)
+        try container.encodeIfPresent(data, forKey: .dataLower)
     }
 }
+

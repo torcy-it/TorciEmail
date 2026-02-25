@@ -2,14 +2,17 @@
 //  RootView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Punto di ingresso visuale dell'app.
+//  Instrada tra login e area autenticata.
 //
 
 import SwiftUI
 
+/// Instradamento UI principale basato sullo stato autenticazione.
 struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
+    /// Mostra mailbox se autenticato, altrimenti login.
     var body: some View {
         Group {
             if authViewModel.isAuthenticated {

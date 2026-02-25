@@ -2,10 +2,11 @@
 //  LoginResponse.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  DTO risposta login.
 //
 
 
+/// Risposta autenticazione contenente token JWT.
 struct LoginResponse: Codable {
     let token: String
 }

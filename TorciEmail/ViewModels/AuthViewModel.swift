@@ -2,7 +2,8 @@
 //  AuthViewModel.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  ViewModel di autenticazione e gestione sessione JWT.
+//  Coordina login/logout, refresh utente e stato di sessione scaduta.
 //
 
 import SwiftUI
@@ -22,30 +23,34 @@ final class AuthViewModel: ObservableObject {
     
     // MARK: - Dependencies
     private let repository: AuthRepository
-    private let apiService = VaporAPIService.shared
+    private let sessionService: SessionExpirationService
     
     private var cancellables = Set<AnyCancellable>()
     private var tokenExpirationTimer: Timer?
     
     // MARK: - Init
     
-    /// Dependency Injection: ViewModel depends on the repository protocol
-    init(repository: AuthRepository = AuthRepositoryImpl()) {
+    /// Dependency Injection: il ViewModel dipende da protocollo repository
+    /// e da un servizio dedicato all'osservazione della scadenza sessione.
+    init(
+        repository: AuthRepository = AuthRepositoryImpl(),
+        sessionService: SessionExpirationService = DefaultSessionExpirationService()
+    ) {
         self.repository = repository
+        self.sessionService = sessionService
         checkAuthStatus()
         observeSessionExpiration()
     }
     
     // MARK: - Auth Status
     
+    /// Inizializza lo stato autenticazione dall'archivio locale e avvia i flussi correlati.
     private func checkAuthStatus() {
         isAuthenticated = repository.isAuthenticated()
         
-        if !isAuthenticated && apiService.isAuthenticated {
-            print("Token expired on app launch, cleaning up...")
+        if !isAuthenticated && sessionService.isAuthenticated {
             cleanupAuth()
         } else if isAuthenticated {
-            print("User is authenticated, refreshing user info...")
             Task {
                 await refreshUserInfo()
             }
@@ -55,35 +60,31 @@ final class AuthViewModel: ObservableObject {
     
     // MARK: - Session Expiration Observer
     
+    /// Osserva la scadenza sessione pubblicata dal service dedicato.
     private func observeSessionExpiration() {
-        apiService.$sessionExpired
+        sessionService.sessionExpiredPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] expired in
-                if expired {
-                    self?.handleSessionExpired()
-                }
+                guard expired else { return }
+                self?.handleSessionExpired()
             }
             .store(in: &cancellables)
     }
     
     // MARK: - Token Expiration Monitoring
     
+    /// Avvia un timer periodico per verificare la scadenza del token JWT.
     private func startTokenExpirationMonitoring() {
         stopTokenExpirationMonitoring()
         
         guard let expirationDate = repository.getTokenExpirationDate() else {
-            print("Cannot get token expiration date")
             return
         }
         
         let now = Date()
         let timeUntilExpiration = expirationDate.timeIntervalSince(now)
         
-        print("Token expires at: \(expirationDate)")
-        print("Time until expiration: \(Int(timeUntilExpiration)) seconds")
-        
         if timeUntilExpiration <= 0 {
-            print("Token already expired!")
             handleSessionExpired()
             return
         }
@@ -94,48 +95,33 @@ final class AuthViewModel: ObservableObject {
                 self?.checkTokenExpiration()
             }
         }
-        
-        print("Token expiration monitoring started (checks every 30s)")
     }
     
+    /// Ferma il monitoraggio periodico della scadenza token.
     private func stopTokenExpirationMonitoring() {
         tokenExpirationTimer?.invalidate()
         tokenExpirationTimer = nil
-        print("Token expiration monitoring stopped")
     }
     
+    /// Verifica se il token e scaduto e innesca il flusso di scadenza.
     private func checkTokenExpiration() {
-        print("Checking token expiration...")
-        
         if repository.isTokenExpired() {
-            print("Token expired detected by timer!")
             stopTokenExpirationMonitoring()
             handleSessionExpired()
-        } else {
-            print("Token still valid")
         }
     }
     
     // MARK: - Refresh User Info
     
-    /// Retrieves current user information from the server using the token
-    /// If it fails, performs logout
+    /// Recupera i dati utente correnti dal server se il token e valido.
     private func refreshUserInfo() async {
-        print("Refreshing user info from server...")
-        print("userEmail is empty: \(self.userEmail.isEmpty)")
-        print("Token expired: \(repository.isTokenExpired())")
-        
         if self.userEmail.isEmpty && !repository.isTokenExpired() {
-            print("Calling getCurrentUser from repository...")
             do {
                 let email = try await repository.getCurrentUser()
                 self.userEmail = email
-                print("User email retrieved and set to: \(email)")
             } catch {
-                print("Failed to get user info: \(error.localizedDescription)")
+                errorMessage = "Impossibile recuperare i dati utente"
             }
-        } else {
-            print("Skipped getCurrentUser - userEmail not empty or token expired")
         }
     }
     
@@ -150,22 +136,15 @@ final class AuthViewModel: ObservableObject {
          isLoading = true
          errorMessage = nil
          
-         print("Attempting login for: \(userEmail)")
-         
          do {
-             // Usa il repository invece dell'apiService
              _ = try await repository.login(username: userEmail, password: password)
              isAuthenticated = true
              
              startTokenExpirationMonitoring()
-             
-             print("Login successful")
          } catch let error as RepositoryError {
              errorMessage = error.errorDescription
-             print("Login failed: \(error.errorDescription ?? "Unknown")")
          } catch {
              errorMessage = "Errore sconosciuto"
-             print("Unexpected error: \(error)")
          }
          
          isLoading = false
@@ -179,19 +158,14 @@ final class AuthViewModel: ObservableObject {
         
         stopTokenExpirationMonitoring()
         
-        print("Attempting logout")
-        
         do {
             try await repository.logout()
             cleanupAuth()
-            print("Logout successful")
         } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("Logout failed: \(error.errorDescription ?? "Unknown")")
             cleanupAuth()
         } catch {
             errorMessage = "Error during logout"
-            print("Unexpected error: \(error)")
             cleanupAuth()
         }
         
@@ -200,23 +174,22 @@ final class AuthViewModel: ObservableObject {
     
     // MARK: - Session Expired Handler
     
+    /// Gestisce lo stato UI quando la sessione risulta scaduta.
     private func handleSessionExpired() {
-        print("Session expired - showing alert")
-        
         stopTokenExpirationMonitoring()
         showSessionExpired = true
     }
     
+    /// Chiude l'alert di sessione scaduta e ripristina stato non autenticato.
     func dismissSessionExpired() {
-        print("User dismissed session expired alert")
-        
         showSessionExpired = false
         cleanupAuth()
-        apiService.sessionExpired = false
+        sessionService.resetSessionExpiredFlag()
     }
     
     // MARK: - Cleanup
     
+    /// Ripulisce in modo centralizzato stato locale e credenziali persistite.
     private func cleanupAuth() {
         isAuthenticated = false
         userEmail = ""

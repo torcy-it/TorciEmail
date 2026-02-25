@@ -2,7 +2,8 @@
 //  AuthRepositoryImpl.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 08/02/26.
+//  Implementazione repository autenticazione.
+//  Gestisce login/logout, stato auth e parsing scadenza JWT.
 //
 
 import Foundation
@@ -13,6 +14,7 @@ final class AuthRepositoryImpl: AuthRepository {
     
     private let apiService: VaporAPIService
     
+    /// Crea il repository con service API iniettabile.
     init(apiService: VaporAPIService = .shared) {
         self.apiService = apiService
     }
@@ -24,7 +26,6 @@ final class AuthRepositoryImpl: AuthRepository {
     func getCurrentUser() async throws -> String {
         do {
             let response = try await apiService.getCurrentUser()
-            print("Repository: Retrieved user email: \(response.email)")
             return response.email
             
         } catch let apiError as APIError {
@@ -34,33 +35,10 @@ final class AuthRepositoryImpl: AuthRepository {
         }
     }
     
-    private func extractEmailFromToken(_ token: String) -> String? {
-        let parts = token.split(separator: ".")
-        guard parts.count == 3 else { return nil }
-        
-        let payloadPart = String(parts[1])
-        
-        var base64 = payloadPart
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-        
-        while base64.count % 4 != 0 {
-            base64.append("=")
-        }
-        
-        guard let data = Data(base64Encoded: base64),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let email = json["sub"] as? String else {
-            return nil
-        }
-        
-        return email
-    }
-    
+    /// Esegue login verso backend e ritorna token JWT.
     func login(username: String, password: String) async throws -> String {
         do {
             let token = try await apiService.login(username: username, password: password)
-            print("Repository: Login successful")
             return token
             
         } catch let apiError as APIError {
@@ -70,10 +48,10 @@ final class AuthRepositoryImpl: AuthRepository {
         }
     }
     
+    /// Esegue logout remoto e pulizia locale in caso di errore.
     func logout() async throws {
         do {
             try await apiService.logout()
-            print("Repository: Logout successful")
             
         } catch let apiError as APIError {
             // Anche se il logout fallisce, pulisci comunque il token locale
@@ -86,19 +64,23 @@ final class AuthRepositoryImpl: AuthRepository {
     }
 
     
+    /// Determina se la sessione locale e ancora valida.
     func isAuthenticated() -> Bool {
         return apiService.isAuthenticated && !isTokenExpired()
     }
     
+    /// Pulisce le credenziali locali.
     func clearAuth() {
         apiService.clearAuth()
     }
     
+    /// Ritorna la data di scadenza JWT se disponibile.
     func getTokenExpirationDate() -> Date? {
         guard let token = apiService.authToken else { return nil }
         return extractExpirationDate(from: token)
     }
     
+    /// Verifica se il token attuale risulta scaduto.
     func isTokenExpired() -> Bool {
         guard let expirationDate = getTokenExpirationDate() else {
             return true
@@ -108,6 +90,7 @@ final class AuthRepositoryImpl: AuthRepository {
     
     // MARK: - Private Helpers
     
+    /// Mappa errori API in errori di dominio repository.
     private func mapAPIError(_ error: APIError) -> RepositoryError {
         switch error {
         case .unauthorized:

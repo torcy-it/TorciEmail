@@ -2,15 +2,18 @@
 //  AdvancedTabView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 20/02/26.
+//  Tab impostazioni avanzate composizione.
+//  Contiene controllo accesso custody, deposito notarile e notifiche push.
 //
 
 import SwiftUI
 
 // MARK: - Advanced Tab View
+/// Vista delle opzioni avanzate di invio.
 struct AdvancedTabView: View {
     @ObservedObject var viewModel: ComposeMailViewModel
 
+    /// Renderizza controlli avanzati e messaggio di futura implementazione.
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -101,7 +104,6 @@ struct AdvancedTabView: View {
             .blur(radius: viewModel.showFutureImplementationAlert ? 3 : 0)
             .disabled(viewModel.showFutureImplementationAlert)
 
-            // MARK: - Popup (NON SFOCATO)
             if viewModel.showFutureImplementationAlert {
                 VStack(spacing: 24) {
                     // Icon

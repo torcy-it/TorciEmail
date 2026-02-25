@@ -1,15 +1,16 @@
 //
-//  EviMailComposeViewModel.swift
+//  ComposeMailViewModel.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 13/02/26.
+//  ViewModel MVVM della schermata di composizione EviMail.
+//  Gestisce stato UI, validazione form, creazione bozza e invio.
 //
 
 import Foundation
 import Combine
 
-// MARK: - EviMail Compose ViewModel
-class ComposeMailViewModel: ObservableObject {
+/// ViewModel principale della composizione email certificata.
+final class ComposeMailViewModel: ObservableObject {
 
     private let emailRepository: EmailRepository
 
@@ -27,6 +28,12 @@ class ComposeMailViewModel: ObservableObject {
     // MARK: - UI State
     @Published var isSending: Bool = false
     @Published var errorMessage: String?
+    
+    // Gestione allegato singolo
+    @Published var selectedAttachmentURL: URL?
+    @Published var selectedAttachmentName: String?
+    @Published var isUploading: Bool = false
+    @Published var uploadError: String?
 
     // MARK: - Email Settings
     @Published var replyToAddress: String = ""
@@ -92,12 +99,17 @@ class ComposeMailViewModel: ObservableObject {
     let certificationLevels = ["Basic", "Advanced", "Qualified"]
 
     // MARK: - Validation
+    
+    /// Verifica il formato email con regex base.
+    /// - Parameter email: Indirizzo da validare.
+    /// - Returns: `true` se il formato è valido.
     func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
 
+    /// Indica se i campi minimi richiesti sono validi per l'invio.
     var canSend: Bool {
         guard !toRecipients.isEmpty else { return false }
         guard !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
@@ -115,7 +127,11 @@ class ComposeMailViewModel: ObservableObject {
         return true
     }
 
-    // MARK: - Helper
+    // MARK: - Supporto
+    
+    /// Estrae l'email da una stringa formattata tipo `Nome <email@domain>`.
+    /// - Parameter recipient: Stringa destinatario.
+    /// - Returns: Indirizzo email normalizzato.
     private func extractEmail(from recipient: String) -> String {
         if let range = recipient.range(of: "<") {
             return String(recipient[..<range.lowerBound])
@@ -128,6 +144,10 @@ class ComposeMailViewModel: ObservableObject {
         ccRecipients.isEmpty
     }
 
+    /// Crea il ViewModel con dipendenza repository iniettabile.
+    /// - Parameters:
+    ///   - fromEmail: Mittente iniziale selezionato.
+    ///   - emailRepository: Implementazione repository (DI).
     init(fromEmail: String = "", emailRepository: EmailRepository = EmailRepositoryImpl()) {
         self.fromEmail = fromEmail
         self.availableFromEmails = [fromEmail]
@@ -135,6 +155,9 @@ class ComposeMailViewModel: ObservableObject {
     }
 
     // MARK: - Email Actions
+    
+    /// Esegue l'invio standard senza allegati locali.
+    /// - Returns: `true` se l'invio è andato a buon fine.
     func sendEmail() async -> Bool {
         guard let draft = createEmailDraft() else {
             errorMessage = "Errore nella creazione della bozza"
@@ -143,27 +166,88 @@ class ComposeMailViewModel: ObservableObject {
 
         isSending = true
         errorMessage = nil
+        defer { isSending = false }
 
         do {
-            let eviId = try await emailRepository.sendEmail(draft)
-            print("Email inviata con successo - EVI ID: \(eviId)")
-            isSending = false
+            _ = try await emailRepository.sendEmail(draft)
             return true
-
         } catch let error as RepositoryError {
             errorMessage = error.errorDescription
-            print("Errore invio: \(error.errorDescription ?? "Unknown")")
-            isSending = false
             return false
         } catch {
             errorMessage = "Errore sconosciuto durante l'invio"
-            print("Unexpected error: \(error)")
-            isSending = false
             return false
         }
     }
+    
+    /// Punto di ingresso usato dalla UI. Se è presente un allegato usa l'endpoint dedicato,
+    /// altrimenti esegue il flusso di invio standard.
+    /// - Returns: `true` se l'invio è completato correttamente.
+    func submitEmailWithAttachment() async -> Bool {
+        guard let draft = createEmailDraft() else {
+            errorMessage = "Errore nella creazione della bozza"
+            return false
+        }
+        
+        // Nessun allegato: fallback alla logica esistente
+        guard let attachmentURL = selectedAttachmentURL else {
+            return await sendEmail()
+        }
+        
+        isSending = true
+        isUploading = true
+        uploadError = nil
+        errorMessage = nil
+        
+        defer {
+            isSending = false
+            isUploading = false
+        }
+        
+        do {
+            _ = try await emailRepository.sendEmailWithAttachment(
+                draft,
+                fileURL: attachmentURL,
+                fileName: selectedAttachmentName
+            )
+            return true
+        } catch let error as RepositoryError {
+            switch error {
+            case .fileTooLarge, .unsupportedFileType:
+                uploadError = error.errorDescription
+            default:
+                errorMessage = error.errorDescription
+            }
+            return false
+        } catch {
+            errorMessage = "Errore sconosciuto durante l'invio"
+            return false
+        }
+    }
+    
+    // MARK: - Supporto Allegati
+    
+    /// Memorizza il file selezionato per l'invio.
+    /// - Parameters:
+    ///   - url: URL locale del file.
+    ///   - suggestedName: Nome mostrato in UI (opzionale).
+    func selectAttachment(url: URL, suggestedName: String? = nil) {
+        selectedAttachmentURL = url
+        selectedAttachmentName = suggestedName ?? url.lastPathComponent
+        uploadError = nil
+    }
+    
+    /// Rimuove l'allegato corrente dalla bozza.
+    func clearAttachment() {
+        selectedAttachmentURL = nil
+        selectedAttachmentName = nil
+        uploadError = nil
+    }
 
     // MARK: - Create EmailDraft
+    
+    /// Costruisce il modello `EmailDraft` dai campi correnti del form.
+    /// - Returns: Bozza pronta per il repository, oppure `nil` in caso di validazione fallita.
     func createEmailDraft() -> EmailDraft? {
         guard !toRecipients.isEmpty else {
             errorMessage = "Aggiungi almeno un destinatario"

@@ -2,12 +2,13 @@
 //  ButtonFrameKey.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 23/01/26.
+//  PreferenceKey per propagare il frame del bottone filtri.
 //
 
 
 import SwiftUI
 
+/// Chiave preferenza usata per ancorare overlay alla posizione del bottone.
 struct ButtonFrameKey: PreferenceKey {
     static var defaultValue: CGRect = .zero
     static func reduce(value: inout CGRect, nextValue: () -> CGRect) {

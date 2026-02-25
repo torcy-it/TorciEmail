@@ -2,13 +2,15 @@
 //  EviMailSubmitRequest.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 08/02/26.
+//  DTO request/response per submit EviMail.
+//  Definisce payload completo inviato all'endpoint `/evimails/submit`.
 //
 
 import Foundation
 
 // MARK: - Submit Request
 
+/// Payload principale submit email certificata.
 struct EviMailSubmitRequest: Codable {
     let subject: String
     let body: String
@@ -35,6 +37,7 @@ struct EviMailSubmitRequest: Codable {
 
 // MARK: - Submit Recipient
 
+/// Destinatario principale del submit.
 struct SubmitRecipient: Codable {
     let legalName: String?
     let emailAddress: String
@@ -47,6 +50,7 @@ struct SubmitRecipient: Codable {
 
 // MARK: - Submit Carbon Copy
 
+/// Destinatario in copia conoscenza.
 struct SubmitCarbonCopy: Codable {
     let name: String
     let emailAddress: String
@@ -59,10 +63,11 @@ struct SubmitCarbonCopy: Codable {
 
 // MARK: - Submit Attachment
 
+/// Allegato inviato in submit (base64 + metadati MIME).
 struct SubmitAttachment: Codable {
     let displayName: String
     let fileName: String
-    let data: String // Base64 encoded
+    let data: String
     let mimeType: String
     let contentId: String?
     let contentDescription: String?
@@ -79,6 +84,7 @@ struct SubmitAttachment: Codable {
 
 // MARK: - Submit Options
 
+/// Opzioni avanzate di certificazione e workflow.
 struct SubmitOptions: Codable {
     let costCentre: String?
     let certificationLevel: String?
@@ -135,6 +141,7 @@ struct SubmitOptions: Codable {
 
 // MARK: - Submit Response
 
+/// Risposta submit con identificativo EviMail creato.
 struct EviMailSubmitResponse: Codable {
     let eviId: String
     

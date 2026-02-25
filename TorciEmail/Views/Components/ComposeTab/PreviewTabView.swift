@@ -2,15 +2,18 @@
 //  PreviewTabView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 20/02/26.
+//  Tab anteprima composizione.
+//  Mostra un riepilogo read-only dei dati inseriti nella bozza.
 //
 
 import SwiftUI
 
 // MARK: - Preview Tab View
+/// Vista di anteprima completa della bozza email.
 struct PreviewTabView: View {
     @ObservedObject var viewModel: ComposeMailViewModel
 
+    /// Rende il riepilogo per sezioni di contenuto/certificazione/impostazioni.
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -79,6 +82,7 @@ struct PreviewTabView: View {
         .background(Color(.systemBackground))
     }
     
+    /// Formatta la data di tracking in forma leggibile.
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -87,6 +91,7 @@ struct PreviewTabView: View {
 }
 
 // MARK: - Section View
+/// Contenitore visuale riusabile per sezioni dell'anteprima.
 struct SectionView<Content: View>: View {
     let title: String
     let content: Content
@@ -118,6 +123,7 @@ struct SectionView<Content: View>: View {
 }
 
 // MARK: - Preview Row
+/// Riga label/valore usata nel riepilogo.
 struct PreviewRow: View {
     let label: String
     let value: String
@@ -154,11 +160,13 @@ struct PreviewRow: View {
 
 // MARK: - Corner Radius Extension
 extension View {
+    /// Applica corner radius solo ai corner specificati.
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape(RoundedCorner(radius: radius, corners: corners))
     }
 }
 
+/// Shape helper per corner radius selettivo.
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners

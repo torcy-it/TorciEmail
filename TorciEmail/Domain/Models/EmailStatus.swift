@@ -2,16 +2,18 @@
 //  EmailStatus.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Stato ad alto livello della email certificata.
 //
 
 import SwiftUI
 
+/// Stati applicativi usati per badge e filtro mailbox.
 enum EmailStatus: Hashable {
     case new, ready, sent, dispatched, delivered
     case read, draft, submitted, expired, replied
     case failed, closed
     
+    /// Indica se lo stato conclude definitivamente il ciclo dell'email.
     var isFinal: Bool {
         switch self {
         case .closed, .expired, .failed:
@@ -21,6 +23,7 @@ enum EmailStatus: Hashable {
         }
     }
     
+    /// Etichetta visuale per badge/lista.
     var title: String {
         switch self {
         case .replied: return "REPLIED"
@@ -38,6 +41,7 @@ enum EmailStatus: Hashable {
         }
     }
     
+    /// Colore di sfondo del badge stato in UI.
     var badgeBackground: Color {
         switch self {
 

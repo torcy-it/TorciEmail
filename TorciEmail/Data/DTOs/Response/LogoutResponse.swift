@@ -2,10 +2,11 @@
 //  LogoutResponse.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  DTO risposta logout.
 //
 
 
+/// Esito chiamata di logout.
 struct LogoutResponse: Codable {
     let ok: Bool
 }

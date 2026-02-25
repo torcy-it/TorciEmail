@@ -2,16 +2,19 @@
 //  MailboxView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 23/01/26.
+//  Vista principale mailbox.
+//  Mostra elenco email, ricerca, filtri e navigazione ai dettagli.
 //
 
 import SwiftUI
 
+/// Schermata iniziale utente autenticato con lista EviMail.
 struct MailboxView: View {
 
     @StateObject private var mailVm = MailboxViewModel()
     @EnvironmentObject var authVm: AuthViewModel
 
+    /// Renderizza la mailbox con stati caricamento/errore/vuoto e contenuto.
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
@@ -22,19 +25,19 @@ struct MailboxView: View {
                             header
 
                             VStack(spacing: 14) {
-                                // Loading state
+                                // Stato caricamento
                                 if mailVm.isLoading && mailVm.emails.isEmpty {
                                     loadingView
                                 }
-                                // Error state
+                                // Stato errore
                                 else if let errorMessage = mailVm.errorMessage, mailVm.emails.isEmpty {
                                     errorView(errorMessage)
                                 }
-                                // Empty state
+                                // Stato vuoto
                                 else if mailVm.searchedEmails.isEmpty {
                                     emptyState
                                 }
-                                // Email list
+                                // Lista email
                                 else {
                                     ForEach(mailVm.searchedEmails) { email in
                                         NavigationLink(value: email) {
@@ -83,6 +86,7 @@ struct MailboxView: View {
 
     // MARK: - Header
 
+    /// Header con titolo, ultimo aggiornamento e bottone filtri.
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -125,34 +129,35 @@ struct MailboxView: View {
     
     private var updateText: String {
         if mailVm.isLoading {
-            return "Loading..."
+            return "Caricamento..."
         }
         return "Update Just Now"
     }
 
-    // MARK: - Loading View
+    // MARK: - Vista Caricamento
     
     private var loadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
                 .scaleEffect(1.2)
             
-            Text("Loading emails...")
+            Text("Caricamento email...")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray)
         }
         .padding(.top, 60)
     }
     
-    // MARK: - Error View
+    // MARK: - Vista Errore
     
+    /// Mostra errore di caricamento con azione di retry.
     private func errorView(_ message: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 50))
                 .foregroundColor(.orange)
             
-            Text("Error loading emails")
+            Text("Errore nel caricamento email")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.primary)
             
@@ -167,7 +172,7 @@ struct MailboxView: View {
                     await mailVm.refreshEmails()
                 }
             } label: {
-                Text("Retry")
+                Text("Riprova")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
@@ -180,7 +185,7 @@ struct MailboxView: View {
         .padding(.top, 60)
     }
 
-    // MARK: - Empty state
+    // MARK: - Vista Vuota
 
     private var emptyState: some View {
         VStack(spacing: 12) {
@@ -188,7 +193,7 @@ struct MailboxView: View {
                 .font(.system(size: 50))
                 .foregroundColor(.gray)
 
-            Text("No emails found")
+            Text("Nessuna email trovata")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.gray)
         }
@@ -260,6 +265,7 @@ struct MailboxView: View {
 
     // MARK: - Filters overlay
 
+    /// Overlay per menu filtri ancorato al bottone in header.
     @ViewBuilder
     private var filtersOverlay: some View {
         if mailVm.showFiltersMenu {

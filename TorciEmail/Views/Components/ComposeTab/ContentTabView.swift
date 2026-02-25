@@ -2,15 +2,16 @@
 //  ContentTabView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 19/02/26.
+//  Tab di composizione contenuto: destinatari, oggetto, corpo, allegato e opzioni base.
 //
 
 
 import SwiftUI
 
-// MARK: - Content Tab View
+/// Vista SwiftUI del tab "Content" nella compose.
 struct ContentTabView: View {
     @ObservedObject var viewModel: ComposeMailViewModel
+    
     var body: some View {
         VStack(spacing: 0) {
             // MARK: - To Field
@@ -132,6 +133,28 @@ struct ContentTabView: View {
             }
             .padding(.horizontal)
             .padding(.top, 16)
+
+            // MARK: - Anteprima Allegato
+            if let attachmentName = viewModel.selectedAttachmentName {
+                HStack(spacing: 10) {
+                    Image(systemName: "paperclip")
+                        .foregroundColor(.secondary)
+                    Text(attachmentName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Spacer()
+                    Button {
+                        viewModel.clearAttachment()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+            }
 
             Spacer(minLength: 20)
 

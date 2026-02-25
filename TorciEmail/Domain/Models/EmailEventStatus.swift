@@ -2,20 +2,20 @@
 //  EmailEventStatus.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 04/02/26.
+//  Stati sintetici evento per rappresentazione compatta in mailbox.
 //
 
 import Foundation
 import SwiftUI
 
-// Modello: stato complessivo dell'email con 3 categorie fisse
+/// Stato complessivo email diviso in invio, lettura e contenuto.
 struct EmailEventStatus: Hashable {
     let sendingStatus: SendingStatus
     let readingStatus: ReadingStatus
     let contentStatus: ContentStatus
 }
 
-// CATEGORIA 1: Invio
+/// Stato del processo di invio.
 enum SendingStatus: Hashable {
     case waiting    // In attesa di invio
     case sent       // Inviato con successo
@@ -46,7 +46,7 @@ enum SendingStatus: Hashable {
     }
 }
 
-// CATEGORIA 2: Lettura
+/// Stato del processo di lettura da parte del destinatario.
 enum ReadingStatus: Hashable {
     case waiting    // In attesa di apertura
     case opened     // Aperto
@@ -73,7 +73,7 @@ enum ReadingStatus: Hashable {
     }
 }
 
-// CATEGORIA 3: Contenuto
+/// Stato della decisione sul contenuto.
 enum ContentStatus: Hashable {
     case waiting    // In attesa di decisione
     case accepted   // Contenuto accettato

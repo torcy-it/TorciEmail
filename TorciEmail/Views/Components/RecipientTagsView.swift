@@ -1,13 +1,21 @@
+//
+//  RecipientTagsView.swift
+//  TorciEmail
+//
+//  Componente destinatari con pills editabili e inserimento guidato.
+//
+
 import SwiftUI
 
+/// Campo destinatari riusabile per sezioni To/Cc.
 struct RecipientTagsView: View {
     let label: String
     @Binding var recipients: [String]
-    let onAddRecipient: (String, String) -> Void  // email, name
+    let onAddRecipient: (String, String) -> Void
     @State private var currentInput: String = ""
     @FocusState private var isTextFieldFocused: Bool
     
-    // Sheet state
+    // Stato fogli modali
     @State private var showNameSheet: Bool = false
     @State private var showAddSheet: Bool = false
     @State private var pendingEmail: String = ""
@@ -15,6 +23,7 @@ struct RecipientTagsView: View {
     @State private var addSheetEmail: String = ""
     @State private var addSheetName: String = ""
     
+    /// Renderizza pills destinatari, input inline e azione aggiunta.
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Text(label)
@@ -354,25 +363,3 @@ struct AddRecipientManualSheet: View {
     }
 }
 
-/*
-// MARK: - Preview
-#Preview {
-    @Previewable @State var toRecipients: [String] = ["adolfo@icloud.com<Adolfo>"]
-    @Previewable @State var ccRecipients: [String] = []
-    
-    VStack {
-        RecipientTagsView(
-            label: "To:",
-            recipients: $toRecipients
-        )
-        
-        Divider()
-        
-        RecipientTagsView(
-            label: "Cc:",
-            recipients: $ccRecipients
-        )
-    }
-    .padding()
-}
-*/

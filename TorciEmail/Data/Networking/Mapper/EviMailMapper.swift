@@ -177,7 +177,7 @@ struct EviMailMapper {
         return "Digital signature with: \(kindsString)"
     }
     
-    // MARK: - Attachments Mapping
+    // MARK: - Mappatura Allegati
     
     private static func mapAttachments(_ apiAttachments: [EviMailAttachment]?) -> [EmailAttachment] {
         guard let apiAttachments = apiAttachments else { return [] }
@@ -190,12 +190,13 @@ struct EviMailMapper {
                 size: attachment.contentLength,
                 mimeType: attachment.mimeType,
                 hash: attachment.hash,
-                kind: EmailAttachment.Kind.from(mimeType: attachment.mimeType)
+                kind: EmailAttachment.Kind.from(mimeType: attachment.mimeType),
+                base64Data: attachment.data
             )
         }
     }
     
-    // MARK: - Status Mapping
+    // MARK: - Mappatura Stato
     
     /// Mappa lo stato eCertia allo stato locale
     private static func mapStatus(_ state: String?) -> EmailStatus {
@@ -216,7 +217,7 @@ struct EviMailMapper {
         }
     }
     
-    // MARK: - Events Mapping
+    // MARK: - Mappatura Eventi
     
     /// Crea array eventi dettagliati (per timeline)
     private static func mapEvents(_ eviMail: EviMail) -> [EmailEvent] {

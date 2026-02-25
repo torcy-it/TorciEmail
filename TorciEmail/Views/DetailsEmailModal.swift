@@ -2,8 +2,8 @@
 //  DetailsEmailModal.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 04/02/26.
-//  Final version with all fields properly mapped
+//  Modale SwiftUI di dettaglio EviMail.
+//  Mostra metadati funzionali/tecnici e timeline informativa.
 //
 
 import SwiftUI
@@ -12,6 +12,7 @@ struct DetailsEmailModal: View {
     @Binding var showDetailsModal: Bool
     let email: EmailItem
     
+    /// Mostra il dettaglio esteso della email selezionata.
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -142,9 +143,7 @@ struct DetailsEmailModal: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        print("Download details")
-                    } label: {
+                    Button { } label: {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 16, weight: .semibold))
                     }
@@ -168,6 +167,7 @@ struct DetailsEmailModal: View {
     
     // MARK: - Helper Methods
     
+    /// Converte una dimensione in byte in una stringa leggibile.
     private func formatBytes(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useKB, .useMB]
@@ -237,12 +237,3 @@ struct DetailRow: View {
 }
 
 
-/*
-// MARK: - Preview
-#Preview {
-    DetailsEmailModal(
-        showDetailsModal: .constant(true),
-        email: .example
-    )
-}
-*/

@@ -2,11 +2,12 @@
 //  AlertButton.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Modello dati per i pulsanti del custom alert.
 //
 
 import Foundation
 
+/// Configurazione di un bottone all'interno di `CustomAlert`.
 struct AlertButton {
     enum Style {
         case `default`

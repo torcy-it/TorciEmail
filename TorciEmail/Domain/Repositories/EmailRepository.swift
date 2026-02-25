@@ -2,13 +2,14 @@
 //  EmailRepository.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 08/02/26.
+//  Definisce il contratto del layer Repository per le operazioni email.
+//  Il ViewModel dipende da questo protocollo per restare disaccoppiato
+//  dai dettagli di networking e mapping dati.
 //
 
 import Foundation
 
-/// Protocol che definisce le operazioni per gestire le email
-/// Il ViewModel dipende solo da questo protocollo, non dall'implementazione
+/// Contratto applicativo per le operazioni di lettura e invio EviMail.
 protocol EmailRepository {
     /// Recupera tutte le email dell'utente
     /// - Returns: Array di EmailItem (modello di dominio)
@@ -26,16 +27,31 @@ protocol EmailRepository {
     /// - Returns: ID dell'email inviata (eviId)
     /// - Throws: RepositoryError in caso di errore
     func sendEmail(_ draft: EmailDraft) async throws -> String
+    
+    /// Invia una nuova email certificata con allegato locale.
+    /// - Parameters:
+    ///   - draft: Bozza dell'email da inviare.
+    ///   - fileURL: URL del file da allegare.
+    ///   - fileName: Nome file opzionale da mostrare lato server/utente.
+    /// - Returns: ID dell'email inviata (eviId).
+    /// - Throws: RepositoryError in caso di errore o validazione fallita.
+    func sendEmailWithAttachment(
+        _ draft: EmailDraft,
+        fileURL: URL,
+        fileName: String?
+    ) async throws -> String
 }
 // MARK: - Repository Error
 
-/// Errori specifici del repository (astrae gli errori dell'API)
+/// Errori del layer repository, mappati in messaggi user-friendly.
 enum RepositoryError: LocalizedError {
     case unauthorized
     case emailNotFound
     case invalidData
     case networkError
     case serverError(message: String)
+    case fileTooLarge
+    case unsupportedFileType
     case unknown
     
     var errorDescription: String? {
@@ -50,6 +66,10 @@ enum RepositoryError: LocalizedError {
             return "Errore di connessione. Verifica la tua rete."
         case .serverError(let message):
             return message
+        case .fileTooLarge:
+            return "Il file selezionato è troppo grande (max 10 MB)."
+        case .unsupportedFileType:
+            return "Formato file non supportato. Usa PDF, DOC, DOCX, JPG, PNG o ZIP."
         case .unknown:
             return "Errore sconosciuto."
         }

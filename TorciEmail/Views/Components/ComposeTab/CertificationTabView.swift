@@ -2,12 +2,14 @@
 //  CertificationTabView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 18/02/26.
+//  Tab certificazione composizione.
+//  Configura livello, lingua affidavit, step certificati e regole motivazioni.
 //
 
 import SwiftUI
 
 // MARK: - Affidavit Step Model
+/// Step configurabile del workflow affidavit.
 struct AffidavitStep: Identifiable {
     let id = UUID()
     let title: String
@@ -16,11 +18,13 @@ struct AffidavitStep: Identifiable {
     var isEnabled: Bool = true
 }
 
+/// Campo attualmente in focus nei reason input.
 enum FocusedReason {
     case accept, reject
 }
 
 // MARK: - Certification Tab View
+/// Vista di configurazione certificazione e reason policy.
 struct CertificationTabView: View {
     @ObservedObject var viewModel: ComposeMailViewModel
     @State private var newAcceptReason: String = ""
@@ -33,6 +37,7 @@ struct CertificationTabView: View {
     @State private var newRejectionReason: String = ""
     @FocusState private var isRejectionReasonFocused: Bool
 
+    /// Renderizza tutte le sezioni di configurazione certificazione.
     var body: some View {
         VStack(spacing: 0) {
 
@@ -271,6 +276,7 @@ struct CertificationTabView: View {
 
     // MARK: - Generic Menu Row
     @ViewBuilder
+    /// Riga menu riusabile per selezione opzione testuale.
     private func menuRow(label: String, options: [String], selected: Binding<String>) -> some View {
         Menu {
             ForEach(options, id: \.self) { option in
@@ -308,6 +314,7 @@ struct CertificationTabView: View {
 }
 
 // MARK: - Reason Tag Input View
+/// Input tag orizzontale per motivazioni di accettazione/rifiuto.
 struct ReasonTagInputView: View {
     @Binding var reasons: [String]
     @Binding var newReason: String
@@ -362,6 +369,7 @@ struct ReasonTagInputView: View {
 }
 
 // MARK: - Affidavit Grid
+/// Griglia step affidavit con binding bidirezionale.
 struct AffidavitGridView: View {
     @Binding var steps: [AffidavitStep]
     let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
@@ -376,6 +384,7 @@ struct AffidavitGridView: View {
 }
 
 // MARK: - Affidavit Step Cell
+/// Cella singolo step affidavit con stato enable/disable.
 struct AffidavitStepCell: View {
     @Binding var step: AffidavitStep
 

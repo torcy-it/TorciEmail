@@ -2,17 +2,20 @@
 //  EmailRowView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 16/11/25.
+//  Cella riga mailbox.
+//  Mostra mittente, oggetto, estratto, stato e icone evento.
 //
 import SwiftUI
 
 
+/// Componente riga singola nella lista email.
 struct EmailRow: View {
     let email: EmailItem
 
+    /// Renderizza il contenuto sintetico della email.
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 4) {  // Spacing minimo di 4px
+            HStack(alignment: .top, spacing: 4) {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(email.sender.legalName ?? "Unknown")
@@ -54,7 +57,7 @@ struct EmailRow: View {
                         )
                     
                 }
-                .fixedSize(horizontal: true, vertical: false)  // Non comprimere la parte destra
+                .fixedSize(horizontal: true, vertical: false)
             }
             .padding(.vertical, 16)
             
@@ -64,22 +67,6 @@ struct EmailRow: View {
         }
     }
 
-    private func statusIcon(systemName: String) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 18, weight: .regular))
-    }
-    
-    private func eventIcon(_ eventItem: EmailEvent) -> some View {
-        let color = eventItem.event.tint(for: eventItem.state).opacity( 0.80)
-        let iconName = eventItem.event.assetName(for: eventItem.state)
-        
-        return Image(iconName)
-            .renderingMode(.template)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 29, height: 24)
-            .foregroundColor(color)
-    }
 }
 
 #Preview {

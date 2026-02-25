@@ -1,6 +1,8 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Main EviMail Compose View
+/// Contenitore principale della composizione EviMail a tab.
 struct EviMailComposeView: View {
     @StateObject private var viewModel: ComposeMailViewModel
     @Environment(\.dismiss) private var dismiss
@@ -9,11 +11,14 @@ struct EviMailComposeView: View {
     @State private var validationMessage: String = ""
     @State private var validationSymbol: String = ""
     @State private var sendTask: Task<Void, Never>? = nil
+    @State private var showFileImporter: Bool = false
 
+    /// Inizializza la compose con mittente pre-selezionato.
     init(fromEmail: String) {
         _viewModel = StateObject(wrappedValue: ComposeMailViewModel(fromEmail: fromEmail))
     }
 
+    /// Gestisce tab di composizione, invio e selezione allegato da file system.
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -44,6 +49,14 @@ struct EviMailComposeView: View {
             } message: {
                 Label(viewModel.errorMessage ?? "", systemImage: "xmark.octagon")
             }
+            .alert("Attachment Error", isPresented: Binding(
+                get: { viewModel.uploadError != nil },
+                set: { if !$0 { viewModel.uploadError = nil } }
+            )) {
+                Button("OK") { viewModel.uploadError = nil }
+            } message: {
+                Text(viewModel.uploadError ?? "")
+            }
             .onDisappear {
                 sendTask?.cancel()
                 viewModel.isSending = false
@@ -70,7 +83,7 @@ struct EviMailComposeView: View {
                             showValidationAlert = true
                         } else {
                             sendTask = Task {
-                                let success = await viewModel.sendEmail()
+                                let success = await viewModel.submitEmailWithAttachment()
                                 if success { dismiss() }
                             }
                         }
@@ -87,11 +100,33 @@ struct EviMailComposeView: View {
                 ToolbarItem(placement: .bottomBar) {
                     if selectedTab == .content {
                         Button("Attach Files", systemImage: "paperclip") {
-                            // TODO: Implement file attachment
+                            showFileImporter = true
                         }
                     }
                 }
                 ToolbarSpacer(placement: .bottomBar)
+            }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: [
+                    .pdf,
+                    .image,
+                    .jpeg,
+                    .png,
+                    .zip,
+                    .data,
+                    .item
+                ],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    if let url = urls.first {
+                        viewModel.selectAttachment(url: url)
+                    }
+                case .failure(let error):
+                    viewModel.uploadError = error.localizedDescription
+                }
             }
         }
     }

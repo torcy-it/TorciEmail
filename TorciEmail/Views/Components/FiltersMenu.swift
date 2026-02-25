@@ -2,21 +2,24 @@
 //  FiltersMenu.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 16/11/25.
+//  Menu filtri mailbox e bottone di attivazione.
 //
 import SwiftUI
 
+/// Tipo icona supportato dal menu filtri.
 enum FilterIcon {
     case asset(String)
     case system(String)
 }
 
+/// Elemento dati singolo per il menu filtri.
 struct MenuItem: Identifiable {
     let id = UUID()
     let icon: FilterIcon
     let label: String
 }
 
+/// Overlay menu con scelta filtro mailbox.
 struct FiltersMenu: View {
     @Binding var selectedFilters: String
     @Binding var showMenu: Bool
@@ -33,6 +36,7 @@ struct FiltersMenu: View {
         .init(icon: .system("tray.full"), label: "All Inbox")
     ]
 
+    /// Costruisce il menu animato e il contenuto selezionabile.
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             ForEach(visibleItems) { item in
@@ -51,7 +55,7 @@ struct FiltersMenu: View {
         showMenu ? menuItems : Array(menuItems.prefix(3))
     }
 
-   
+    /// Singola riga selezionabile del menu.
     private func menuItem(_ item: MenuItem) -> some View {
         Button {
             let impact = UIImpactFeedbackGenerator(style: .light)
@@ -83,7 +87,8 @@ struct FiltersMenu: View {
             .foregroundColor(.black)
             .padding(.vertical, 10)
             .padding(.horizontal, 8)
-            .frame(width: 160, alignment: .leading)            .contentShape(Rectangle())
+            .frame(width: 160, alignment: .leading)
+            .contentShape(Rectangle())
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.black.opacity(pressedItem == item.label ? 0.08 : 0.0))
@@ -98,6 +103,7 @@ struct FiltersMenu: View {
 }
 
 
+/// Bottone che apre/chiude il menu filtri.
 struct FiltersButton: View {
     @Binding var showMenu: Bool
     @Binding var selectedFilter: String
@@ -129,8 +135,7 @@ struct FiltersButton: View {
         }
         .buttonStyle(.plain)
     }
-    
-    
+    /// Associa filtro corrente all'icona rappresentativa.
     private func iconForFilter(_ filter: String) -> FilterIcon {
         switch filter {
         case "Sent":
@@ -153,6 +158,7 @@ struct FiltersButton: View {
 }
 
 @ViewBuilder
+/// Renderizza icona sistema o asset in modo uniforme.
 private func iconView(
     _ icon: FilterIcon
 ) -> some View {
@@ -165,7 +171,8 @@ private func iconView(
     case .asset(let name):
         Image(name)
             .renderingMode(.template)
-            .resizable() .scaledToFit()
+            .resizable()
+            .scaledToFit()
             .frame(width: 30, height: 28)
             .frame(width: 22, alignment: .leading)
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Modello per creare una nuova email (domain model)
+/// Modello di dominio usato per costruire una richiesta di invio EviMail.
 struct EmailDraft {
     let subject: String
     let body: String
@@ -8,12 +8,23 @@ struct EmailDraft {
     let recipientName: String?
     let recipientEmail: String
     
-    // Optional fields
+    /// Campi opzionali della bozza.
     let replyTo: String?
     let carbonCopy: [CarbonCopyDraft]?
     let options: EmailOptions?
     let attachments: [AttachmentDraft]?
     
+    /// Inizializza una bozza pronta per il mapping verso DTO API.
+    /// - Parameters:
+    ///   - subject: Oggetto email.
+    ///   - body: Corpo testuale/html.
+    ///   - issuerName: Identificativo mittente lato business.
+    ///   - recipientName: Nome destinatario (opzionale).
+    ///   - recipientEmail: Email destinatario principale.
+    ///   - replyTo: Intestazione Reply-To opzionale.
+    ///   - carbonCopy: Destinatari in copia conoscenza.
+    ///   - options: Opzioni di certificazione e workflow.
+    ///   - attachments: Allegati in formato binario.
     init(
         subject: String,
         body: String,
@@ -60,6 +71,7 @@ struct EmailOptions {
     let pushNotificationUrl: String?
     let costCentre: String?
     
+    /// Inizializza le opzioni avanzate di invio certificato.
     init(
         certificationLevel: String? = "Advanced",
         language: String? = "en",
@@ -113,10 +125,12 @@ struct EmailOptions {
 }
 
 
+/// Allegato da inviare in submit.
 struct AttachmentDraft {
     let displayName: String
     let fileName: String
-    let data: Data  // Binary data, non base64
+    /// Dati binari raw del file. Il mapping DTO li converte in base64.
+    let data: Data
     let mimeType: String
     let contentId: String?
     let contentDescription: String?

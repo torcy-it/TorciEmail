@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Tab Types
+/// Tab disponibili nella schermata compose.
 enum ComposeTab: CaseIterable {
     case content
     case certification
@@ -27,6 +28,7 @@ enum ComposeTab: CaseIterable {
 }
 
 // MARK: - Compose Tab Bar
+/// Barra tab custom della schermata composizione.
 struct ComposeTabBar: View {
     @Binding var selectedTab: ComposeTab
 
@@ -35,6 +37,7 @@ struct ComposeTabBar: View {
     private let grayBg    = Color.gray.opacity(0.20)
     private let grayIcon  = Color.gray.opacity(0.60)
 
+    /// Renderizza i tab con stato selezionato e animazioni.
     var body: some View {
         HStack(spacing: 8) {
             ForEach(ComposeTab.allCases, id: \.self) { tab in

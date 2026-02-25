@@ -2,21 +2,21 @@
 //  ProfileView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 16/11/25.
+//  Schermata profilo utente.
+//  Espone informazioni base e azione di logout con conferma.
 //
 
 import SwiftUI
 
+/// Vista profilo con conferma logout.
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authVm: AuthViewModel
     @State private var showLogoutConfirmation = false
     
+    /// Renderizza avatar, informazioni account e alert di conferma logout.
     var body: some View {
         ZStack {
-//            Color(red: 17/255, green: 24/255, blue: 39/255)
-//                .ignoresSafeArea()
-            
             VStack(spacing: 20) {
                 // Avatar grande
                 Image("watermelon")

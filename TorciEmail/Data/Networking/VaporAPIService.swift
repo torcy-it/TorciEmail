@@ -2,7 +2,8 @@
 //  VaporAPIService.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Client HTTP centralizzato verso backend Vapor.
+//  Gestisce autenticazione, endpoint EviMail e mappatura errori di rete.
 //
 
 import Foundation
@@ -37,12 +38,13 @@ enum APIError: LocalizedError {
     }
 }
 
-class VaporAPIService: ObservableObject {
+/// Servizio networking principale dell'app.
+final class VaporAPIService: ObservableObject {
     static let shared = VaporAPIService()
     
     private let baseURL: String
     private(set) var authToken: String?
-    private let urlSession: URLSession  // Aggiungi questa proprietà
+    private let urlSession: URLSession
     
     @Published var sessionExpired: Bool = false
     
@@ -50,10 +52,9 @@ class VaporAPIService: ObservableObject {
         self.baseURL = baseURL
         self.authToken = KeychainManager.shared.getToken()
         
-        // Configura URLSession con timeout più lungo
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 60  // 60 secondi
-        configuration.timeoutIntervalForResource = 120  // 2 minuti
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 120
         self.urlSession = URLSession(configuration: configuration)
     }
     
@@ -61,21 +62,18 @@ class VaporAPIService: ObservableObject {
         return authToken != nil
     }
     
+    /// Ritorna le informazioni utente corrente usando il token JWT attivo.
     func getCurrentUser() async throws -> UserInfoResponse {
-        print("Fetching current user info")
-        
         let response: UserInfoResponse = try await get(
             endpoint: "/me",
             requiresAuth: true
         )
-        
-        print("Retrieved user info: \(response.email)")
-        
         return response
     }
     
     // MARK: - Authentication
     
+    /// Esegue login e persiste il token nel keychain.
     func login(username: String, password: String) async throws -> String {
         let request = LoginRequest(username: username, password: password)
         let response: LoginResponse = try await post(
@@ -87,11 +85,10 @@ class VaporAPIService: ObservableObject {
         self.authToken = response.token
         KeychainManager.shared.saveToken(response.token)
         
-        print("Login successful, token saved")
-        
         return response.token
     }
     
+    /// Esegue logout remoto e pulizia locale credenziali.
     func logout() async throws {
         let _: LogoutResponse = try await post(
             endpoint: "/logout",
@@ -100,10 +97,10 @@ class VaporAPIService: ObservableObject {
         )
         
         clearAuth()
-        print("Logout successful")
     }
     
     
+    /// Svuota le credenziali locali dell'utente corrente.
     func clearAuth() {
         self.authToken = nil
         KeychainManager.shared.deleteToken()
@@ -111,38 +108,51 @@ class VaporAPIService: ObservableObject {
     
     // MARK: - EviMails
     
+    /// Recupera la mailbox completa dal backend.
     func queryAllEviMails() async throws -> EviMailQueryResponse {
-        print("Querying ALL EviMails")
-        
         let response: EviMailQueryResponse = try await post(
             endpoint: "/evimails/query-all",
             body: EmptyBody(),
             requiresAuth: true
         )
-        
-        print("Received \(response.results.count) emails")
-        
         return response
     }
     
+    /// Recupera i dettagli completi di una singola EviMail.
     func getEviMail(id: String) async throws -> EviMail {
-        print("Fetching EviMail: \(id)")
-        
         struct GetByIdRequest: Encodable {
             let id: String
+            let includeAffidavits: Bool?
+            let includeAttachments: Bool?
+            let includeAttachmentBlobs: Bool?
+            let includeAffidavitBlobs: Bool?
+            
+            enum CodingKeys: String, CodingKey {
+                case id
+                case includeAffidavits = "IncludeAffidavits"
+                case includeAttachments = "IncludeAttachments"
+                case includeAttachmentBlobs = "IncludeAttachmentBlobs"
+                case includeAffidavitBlobs = "IncludeAffidavitBlobs"
+            }
         }
         
-        let email: EviMail = try await post(
-            endpoint: "/evimails/get-by-id",
-            body: GetByIdRequest(id: id),
-            requiresAuth: true
+        let requestBody = GetByIdRequest(
+            id: id,
+            includeAffidavits: true,
+            includeAttachments: true,
+            includeAttachmentBlobs: true,
+            includeAffidavitBlobs: true
         )
         
-        print("Received EviMail")
-        
+        let rawData = try await postBinary(
+            endpoint: "/evimails/get-by-id",
+            body: requestBody,
+            requiresAuth: true
+        )
+        let email = try JSONDecoder().decode(EviMail.self, from: rawData)
         return email
     }
-    
+
     // MARK: - HTTP Methods
     
     private func post<T: Encodable, R: Decodable>(
@@ -198,13 +208,34 @@ class VaporAPIService: ObservableObject {
     }
     
     private func performRequest<R: Decodable>(_ request: URLRequest) async throws -> R {
+        let data = try await performRawRequest(request)
+        
+        do {
+            return try JSONDecoder().decode(R.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+    }
+}
+
+// MARK: - Modelli di supporto
+
+struct EmptyBody: Codable {}
+
+struct ErrorResponse: Codable {
+    let error: Bool
+    let reason: String
+}
+
+extension VaporAPIService {
+    
+    /// Esegue una richiesta HTTP e restituisce i dati grezzi, gestendo la mappatura errori.
+    func performRawRequest(_ request: URLRequest) async throws -> Data {
         let (data, response): (Data, URLResponse)
         
         do {
-            // Usa urlSession invece di URLSession.shared
             (data, response) = try await urlSession.data(for: request)
         } catch {
-            print("Network error: \(error)")
             throw APIError.networkError(error)
         }
         
@@ -212,13 +243,8 @@ class VaporAPIService: ObservableObject {
             throw APIError.invalidResponse
         }
         
-        print("Status: \(httpResponse.statusCode)")
-        
         guard (200...299).contains(httpResponse.statusCode) else {
             if httpResponse.statusCode == 401 {
-                print("401 Unauthorized - Token expired")
-                
-    
                 await MainActor.run {
                     self.sessionExpired = true
                 }
@@ -233,44 +259,59 @@ class VaporAPIService: ObservableObject {
             )
         }
         
-        do {
-            return try JSONDecoder().decode(R.self, from: data)
-        } catch {
-            print("Decoding error: \(error)")
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response: \(jsonString)")
-            }
-            throw APIError.decodingError(error)
-        }
+        return data
     }
-}
-
-// MARK: - Helper Models
-
-struct EmptyBody: Codable {}
-
-struct ErrorResponse: Codable {
-    let error: Bool
-    let reason: String
+    
+    /// POST con corpo JSON, restituisce dati grezzi (usato per download binari).
+    func postBinary<T: Encodable>(
+        endpoint: String,
+        body: T,
+        requiresAuth: Bool
+    ) async throws -> Data {
+        var request = try createRequest(
+            endpoint: endpoint,
+            method: "POST",
+            requiresAuth: requiresAuth
+        )
+        
+        request.httpBody = try JSONEncoder().encode(body)
+        return try await performRawRequest(request)
+    }
+    
+    /// Invia un corpo multipart già costruito, con content-type personalizzato.
+    func sendMultipart(
+        endpoint: String,
+        bodyData: Data,
+        contentType: String,
+        requiresAuth: Bool
+    ) async throws -> Data {
+        var request = try createRequest(
+            endpoint: endpoint,
+            method: "POST",
+            requiresAuth: requiresAuth
+        )
+        
+        var headers = request.allHTTPHeaderFields ?? [:]
+        headers["Content-Type"] = contentType
+        request.allHTTPHeaderFields = headers
+        request.httpBody = bodyData
+        
+        return try await performRawRequest(request)
+    }
 }
 
 extension VaporAPIService {
     
     /// Invia una nuova EviMail certificata
     /// - Parameter request: Richiesta di invio con tutti i dati
-    /// - Returns: Response con eviId dell'email inviata
+    /// - Returns: Risposta con `eviId` dell'email inviata.
     /// - Throws: APIError in caso di errore
     func submitEviMail(_ request: EviMailSubmitRequest) async throws -> EviMailSubmitResponse {
-        print("Submitting EviMail to: \(request.recipient.emailAddress)")
-        
         let response: EviMailSubmitResponse = try await post(
             endpoint: "/evimails/submit",
             body: request,
             requiresAuth: true
         )
-        
-        print("EviMail submitted: \(response.eviId)")
-        
         return response
     }
 }

@@ -2,38 +2,37 @@
 //  SessionExpiredView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Overlay di sessione scaduta.
+//  Blocca la UI e richiede ritorno al login.
 //
 
 
 import SwiftUI
 
+/// Vista modale full-screen mostrata quando il JWT non e piu valido.
 struct SessionExpired: View {
     let onDismiss: () -> Void
     
+    /// Mostra messaggio di sessione scaduta e azione di conferma.
     var body: some View {
         ZStack {
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
             
             VStack(spacing: 24) {
-                // Icona
                 Image(systemName: "clock.badge.exclamationmark")
                     .font(.system(size: 60))
                     .foregroundColor(.orange)
                 
-                // Titolo
                 Text("Sessione Scaduta")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.primary)
                 
-                // Messaggio
                 Text("La tua sessione è scaduta.\nEffettua nuovamente il login.")
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                 
-                // Pulsante
                 Button(action: onDismiss) {
                     Text("Vai al Login")
                         .font(.system(size: 17, weight: .semibold))

@@ -1,8 +1,9 @@
 //
-//  SelectRow.swift
+//  EmailView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 21/01/26.
+//  Vista di dettaglio di una EviMail.
+//  Mostra contenuto, metadati, allegati e apre anteprima locale dei file scaricati.
 //
 
 
@@ -18,9 +19,13 @@ struct EmailView: View {
     @State private var detailsError: String?
     @State private var showDetailsModal = false
     @State private var showCertificatesModal = false
+    @State private var attachmentDownloadError: String?
+    @State private var previewURL: URL?
 
     // MARK: - Init
     
+    /// Inizializza la vista con l'email selezionata dalla lista.
+    /// - Parameter email: Modello email iniziale da dettagliare.
     init(email: EmailItem) {
         _currentEmail = State(initialValue: email)
     }
@@ -79,6 +84,9 @@ struct EmailView: View {
         .sheet(isPresented: $showCertificatesModal) {
             CertificateEmailModal(showCertificatesModal: $showCertificatesModal, email: currentEmail)
         }
+        .sheet(item: previewItemBinding) { item in
+            FilePreviewSheet(url: item.url)
+        }
         .task {
        
             await loadEmailDetails()
@@ -87,12 +95,13 @@ struct EmailView: View {
         
             await loadEmailDetails()
         }
-        .alert("Error", isPresented: .constant(detailsError != nil)) {
+        .alert("Error", isPresented: .constant(detailsError != nil || attachmentDownloadError != nil)) {
             Button("OK") {
                 detailsError = nil
+                attachmentDownloadError = nil
             }
         } message: {
-            if let error = detailsError {
+            if let error = detailsError ?? attachmentDownloadError {
                 Text(error)
             }
         }
@@ -229,9 +238,7 @@ struct EmailView: View {
 
                         Spacer()
 
-                        Button("View all") {
-                            // TODO: sheet/push con lista completa
-                        }
+                        Button("View all") { }
                         .font(.system(size: 14, weight: .semibold))
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
@@ -261,7 +268,9 @@ struct EmailView: View {
 
     private func attachmentTile(_ att: EmailAttachment) -> some View {
         Button {
-            
+            Task {
+                await handleAttachmentTap(att)
+            }
         } label: {
             HStack(spacing: 10) {
                 ZStack {
@@ -315,6 +324,29 @@ struct EmailView: View {
         case .other: return "doc"
         }
     }
+    
+    private func handleAttachmentTap(_ att: EmailAttachment) async {
+        do {
+            let url = try await mailVm.downloadAttachment(att)
+            previewURL = url
+        } catch let error as RepositoryError {
+            attachmentDownloadError = error.errorDescription
+        } catch {
+            attachmentDownloadError = "Errore durante il download dell'allegato"
+        }
+    }
+    
+    private var previewItemBinding: Binding<PreviewItem?> {
+        Binding<PreviewItem?>(
+            get: {
+                guard let previewURL else { return nil }
+                return PreviewItem(url: previewURL)
+            },
+            set: { newValue in
+                previewURL = newValue?.url
+            }
+        )
+    }
 
     private var bodyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -338,5 +370,10 @@ struct EmailView: View {
                 )
         )
     }
+}
+
+private struct PreviewItem: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
 

@@ -15,6 +15,8 @@ struct EmailAttachment: Identifiable, Hashable {
     let mimeType: String
     let hash: String?
     let kind: Kind
+    /// Dati base64 dell'allegato (se presenti nella risposta dettagliata)
+    let base64Data: String?
     
     enum Kind: Hashable {
         case pdf, image, doc, zip, other

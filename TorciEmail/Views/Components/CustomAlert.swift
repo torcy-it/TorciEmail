@@ -2,18 +2,20 @@
 //  CustomAlertView.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  Alert custom full-screen con uno o due pulsanti.
 //
 
 
 import SwiftUI
 
+/// Popup modale custom per conferme bloccanti lato UI.
 struct CustomAlert: View {
     let title: String
     let message: String
     let primaryButton: AlertButton
     let secondaryButton: AlertButton?
     
+    /// Inizializza l'alert con titolo, messaggio e azioni.
     init(
         title: String,
         message: String,
@@ -26,32 +28,25 @@ struct CustomAlert: View {
         self.secondaryButton = secondaryButton
     }
     
+    /// Disegna overlay, contenuto e bottoni d'azione.
     var body: some View {
         ZStack {
-            // Sfondo scuro con blur
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .onTapGesture {
-                    // Chiudi toccando fuori (opzionale)
-                }
+                .onTapGesture { }
             
-            // Card del popup
             VStack(spacing: 20) {
-                // Titolo
                 Text(title)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
                 
-                // Messaggio
                 Text(message)
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                // Pulsanti
                 VStack(spacing: 12) {
-                    // Pulsante primario
                     Button(action: primaryButton.action) {
                         Text(primaryButton.title)
                             .font(.system(size: 17, weight: .semibold))
@@ -62,7 +57,6 @@ struct CustomAlert: View {
                             .cornerRadius(12)
                     }
                     
-                    // Pulsante secondario (opzionale)
                     if let secondary = secondaryButton {
                         Button(action: secondary.action) {
                             Text(secondary.title)
@@ -88,6 +82,7 @@ struct CustomAlert: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: true)
     }
     
+    /// Ritorna il colore coerente con lo stile del pulsante.
     private func buttonColor(for style: AlertButton.Style) -> Color {
         switch style {
         case .default:

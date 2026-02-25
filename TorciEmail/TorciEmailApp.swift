@@ -2,15 +2,18 @@
 //  TorciEmailApp.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 16/11/25.
+//  Entry point applicazione iOS.
+//  Inietta dipendenze globali nel root tree SwiftUI.
 //
 
 import SwiftUI
 
 @main
+/// Tipo principale dell'app SwiftUI.
 struct TorciEmailApp: App {
     @StateObject private var authViewModel = AuthViewModel.shared
     
+    /// Avvia la scena principale con `RootView`.
     var body: some Scene {
         WindowGroup {
             RootView()

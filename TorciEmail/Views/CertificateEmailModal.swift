@@ -2,7 +2,8 @@
 //  CertificateEmailModal.swift
 //  TorciEmail
 //
-//  Fixed to match EviMailMapper event structure
+//  Vista modale della timeline certificati (affidavit) associati a una EviMail.
+//  Permette download/anteprima del singolo certificato e export multiplo.
 //
 
 import SwiftUI
@@ -10,7 +11,11 @@ import SwiftUI
 struct CertificateEmailModal: View {
     @Binding var showCertificatesModal: Bool
     let email: EmailItem
+    @EnvironmentObject var mailVm: MailboxViewModel
+    @State private var previewURL: URL?
+    @State private var downloadError: String?
     
+    /// Mostra timeline eventi certificati e azioni download/anteprima.
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -71,14 +76,14 @@ struct CertificateEmailModal: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
-                            print("Export certificate")
+                            Task {
+                                await downloadAllAffidavits()
+                            }
                         } label: {
                             Label("Export All Affidavits", systemImage: "square.and.arrow.up")
                         }
                         
-                        Button {
-                            print("Share")
-                        } label: {
+                        Button { } label: {
                             Label("Download All Affidavits", systemImage: "arrow.down.doc")
                         }
                     } label: {
@@ -90,7 +95,54 @@ struct CertificateEmailModal: View {
                 
             }
             .toolbarTitleDisplayMode(.inline)
+            .sheet(item: previewItemBinding) { item in
+                FilePreviewSheet(url: item.url)
+            }
+            .alert("Error", isPresented: .constant(downloadError != nil)) {
+                Button("OK") { downloadError = nil }
+            } message: {
+                Text(downloadError ?? "")
+            }
         }
+    }
+    
+    /// Scarica in locale tutti i certificati associati alla email.
+    private func downloadAllAffidavits() async {
+        for affidavit in email.affidavits {
+            do {
+                _ = try await mailVm.downloadAffidavit(affidavit)
+            } catch let error as RepositoryError {
+                downloadError = error.errorDescription
+                return
+            } catch {
+                downloadError = "Errore durante il download dell'affidavit"
+                return
+            }
+        }
+    }
+    
+    /// Scarica e apre in anteprima un certificato specifico.
+    private func downloadAndPreviewAffidavit(_ affidavit: Affidavit) async {
+        do {
+            let url = try await mailVm.downloadAffidavit(affidavit)
+            previewURL = url
+        } catch let error as RepositoryError {
+            downloadError = error.errorDescription
+        } catch {
+            downloadError = "Errore durante il download dell'affidavit"
+        }
+    }
+    
+    private var previewItemBinding: Binding<PreviewItem?> {
+        Binding<PreviewItem?>(
+            get: {
+                guard let previewURL else { return nil }
+                return PreviewItem(url: previewURL)
+            },
+            set: { newValue in
+                previewURL = newValue?.url
+            }
+        )
     }
     
     // MARK: - Certificate Header
@@ -209,7 +261,10 @@ struct CertificateEmailModal: View {
                 EventRow(
                     event: event,
                     isFirst: index == 0,
-                    isLast: index == sortedEvents.count - 1
+                    isLast: index == sortedEvents.count - 1,
+                    onDownloadAffidavit: { affidavit in
+                        Task { await downloadAndPreviewAffidavit(affidavit) }
+                    }
                 )
             }
         }
@@ -249,6 +304,7 @@ struct EventRow: View {
     let event: EmailEvent
     let isFirst: Bool
     let isLast: Bool
+    let onDownloadAffidavit: ((Affidavit) -> Void)?
     
     @State private var isExpanded = false
     
@@ -305,7 +361,7 @@ struct EventRow: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                // Main content
+                // Contenuto principale
                 VStack(alignment: .leading, spacing: 12) {
                     // Timestamp
                     Text(event.timestampReadable)
@@ -406,9 +462,7 @@ struct EventRow: View {
                         .padding(.horizontal, 16)
                     
                     HStack(spacing: 16) {
-                        Button {
-                            print("View details for: \(event.id)")
-                        } label: {
+                        Button { } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.system(size: 14))
@@ -421,7 +475,8 @@ struct EventRow: View {
                         Spacer()
                         
                         Button {
-                            print("Download affidavit: \(event.id)")
+                            guard let affidavit = event.affidavit else { return }
+                            onDownloadAffidavit?(affidavit)
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "arrow.down.doc")
@@ -520,13 +575,7 @@ struct EventRow: View {
     }
 }
 
-
-// MARK: - Preview
-
-#Preview {
-    CertificateEmailModal(
-        showCertificatesModal: .constant(true),
-        email: .exampleDeliveredNotRead,
-    )
+private struct PreviewItem: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
-

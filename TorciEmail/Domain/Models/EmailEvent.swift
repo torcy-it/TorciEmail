@@ -2,12 +2,14 @@
 //  EmailEvent.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 04/02/26.
+//  Modelli dominio per timeline eventi certificati.
+//  Include mappature visuali per icona, colore e descrizione stato.
 //
 
 import Foundation
 import SwiftUI
 
+/// Evento puntuale nella timeline di una EviMail.
 struct EmailEvent: Hashable {
     let id: UUID
     let affidavit: Affidavit?
@@ -18,6 +20,7 @@ struct EmailEvent: Hashable {
     let color: Color
     let icon: String
     
+    /// Inizializzatore evento con metadati timeline.
     init(
         id: UUID = UUID(),
         affidavit: Affidavit? = nil,
@@ -38,6 +41,7 @@ struct EmailEvent: Hashable {
         self.icon = icon
     }
 }
+/// Categoria macro-evento nel ciclo di vita EviMail.
 enum EventType: Hashable {
     case preparation    // Preparazione/attesa invio
     case sending        // Invio in corso
@@ -45,6 +49,7 @@ enum EventType: Hashable {
     case decision       // Decisione sul contenuto
     case closing        //fine del monitoraggio
     
+    /// Restituisce asset icona coerente con tipo e stato specifico.
     func assetName(for state: EventState) -> String {
         switch (self, state) {
         // PREPARATION (attesa invio)
@@ -84,6 +89,7 @@ enum EventType: Hashable {
         }
     }
     
+    /// Restituisce colore UI coerente con tipo e stato specifico.
     func tint(for state: EventState) -> Color {
         switch (self, state) {
         // PREPARATION
@@ -121,6 +127,7 @@ enum EventType: Hashable {
         }
     }
     
+    /// Restituisce descrizione localizzata per tipo/stato evento.
     func description(for state: EventState) -> String {
         switch (self, state) {
         case (.preparation, .preparation(.pending)):
@@ -153,6 +160,7 @@ enum EventType: Hashable {
     }
 }
 
+/// Stato concreto associato a un `EventType`.
 enum EventState: Hashable {
     case preparation(PreparationState)
     case sending(SendingState)
@@ -161,11 +169,13 @@ enum EventState: Hashable {
     case closing(ClosingState)
 }
 
+/// Sotto-stati della fase preparazione.
 enum PreparationState: Hashable {
     case pending    // In attesa
     case ready      // Pronto
 }
 
+/// Sotto-stati della fase invio.
 enum SendingState: Hashable {
     case sent       // Inviato
     case dispatched // Spedito
@@ -173,23 +183,27 @@ enum SendingState: Hashable {
     case failed     // Fallito
 }
 
+/// Sotto-stati della fase lettura.
 enum ReadingState: Hashable {
     case waiting     //in attesa di lettura
     case opened     // Aperto
 }
 
+/// Sotto-stati della fase decisione contenuto.
 enum DecisionState: Hashable {
     case contentWaiting    // In attesa di decisione
     case contentAccepted    // Contenuto accettato
     case contentRejected    // Contenuto rifiutato
 }
 
+/// Sotto-stati della fase chiusura tracking.
 enum ClosingState: Hashable {
     case closed
 }
 
 extension EmailEvent {
 
+    /// Timestamp breve per UI compatta.
     var timestampShort: String {
         timestampUTC.formatted(
             .dateTime
@@ -201,7 +215,7 @@ extension EmailEvent {
         )
     }
 
-  
+    /// Timestamp esteso leggibile per dettaglio evento.
     var timestampReadable: String {
         timestampUTC.formatted(
             .dateTime
@@ -213,6 +227,7 @@ extension EmailEvent {
         )
     }
 
+    /// Timestamp relativo (es. "2h ago").
     var timestampRelative: String {
         timestampUTC.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
     }

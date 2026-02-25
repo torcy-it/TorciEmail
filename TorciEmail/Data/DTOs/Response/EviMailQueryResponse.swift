@@ -2,10 +2,11 @@
 //  EviMailQueryResponse.swift
 //  TorciEmail
 //
-//  Created by Adolfo Torcicollo on 03/02/26.
+//  DTO risposta query mailbox.
 //
 
 
+/// Risultato paginato/aggregato della query EviMail.
 struct EviMailQueryResponse: Codable {
     let totalMatches: Int
     let results: [EviMail]
