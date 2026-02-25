@@ -68,6 +68,14 @@ final class EmailRepositoryImpl: EmailRepository {
             // Converti EmailDraft (domain) -> EviMailSubmitRequest (DTO)
             let submitRequest = mapDraftToSubmitRequest(draft)
             
+            // DEBUG: Stampa il JSON della request con formattazione
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            if let jsonData = try? encoder.encode(submitRequest),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("📧 JSON da inviare:\n\(jsonString)")
+            }
+            
             let response = try await apiService.submitEviMail(submitRequest)
             
             print("Repository: Email sent with ID \(response.eviId)")
@@ -101,16 +109,16 @@ final class EmailRepositoryImpl: EmailRepository {
     }
     
     /// Converte EmailDraft (domain model) in EviMailSubmitRequest (DTO)
-    private func mapDraftToSubmitRequest(_ draft: EmailDraft) -> EviMailSubmitRequest {
+    func mapDraftToSubmitRequest(_ draft: EmailDraft) -> EviMailSubmitRequest {
         // Map carbon copy
-        let carbonCopy: SubmitCarbonCopy? = draft.carbonCopy.map {
+        let carbonCopy: [SubmitCarbonCopy]? = draft.carbonCopy?.map {
             SubmitCarbonCopy(name: $0.name, emailAddress: $0.emailAddress)
         }
         
         // Map options
         let options: SubmitOptions? = draft.options.map { opts in
             SubmitOptions(
-                costCentre: nil,
+                costCentre: opts.costCentre,
                 certificationLevel: opts.certificationLevel,
                 affidavitsOnDemandEnabled: true,
                 timeToLive: opts.timeToLive,
@@ -120,29 +128,29 @@ final class EmailRepositoryImpl: EmailRepository {
                 evidenceAccessControlMethod: nil,
                 evidenceAccessControlChallenge: nil,
                 evidenceAccessControlChallengeResponse: nil,
-                onlineRetentionPeriod: nil,
+                onlineRetentionPeriod: 1,
                 deliveryMode: opts.deliveryMode,
-                whatsAppPinPolicy: nil,
+                whatsAppPinPolicy: "Optional",
                 commitmentOptions: opts.commitmentOptions,
-                commitmentCommentsAllowed: nil,
-                rejectReasons: nil,
-                acceptReasons: nil,
-                requireRejectReason: nil,
-                requireAcceptReason: nil,
-                pushNotificationUrl: nil,
+                commitmentCommentsAllowed: opts.allowReasons,
+                rejectReasons: opts.rejectReasons,
+                acceptReasons: opts.acceptReasons,
+                requireRejectReason: opts.rejectReasonsRequired,
+                requireAcceptReason: opts.acceptReasonsRequired,
+                pushNotificationUrl: opts.pushNotificationUrl,
                 pushNotificationFilter: nil,
-                affidavitKinds: nil,
+                affidavitKinds: opts.affidavitKinds,
                 customLayoutLogoUrl: nil,
                 pushNotificationExtraData: nil
             )
         }
         
-        // Map attachments (Data -> Base64)
+        // Map attachments
         let attachments: [SubmitAttachment]? = draft.attachments?.map { att in
             SubmitAttachment(
                 displayName: att.displayName,
                 fileName: att.fileName,
-                data: att.data.base64EncodedString(),  // Convert Data to Base64
+                data: att.data.base64EncodedString(),
                 mimeType: att.mimeType,
                 contentId: att.contentId,
                 contentDescription: att.contentDescription
@@ -164,4 +172,5 @@ final class EmailRepositoryImpl: EmailRepository {
             attachments: attachments
         )
     }
+    
 }

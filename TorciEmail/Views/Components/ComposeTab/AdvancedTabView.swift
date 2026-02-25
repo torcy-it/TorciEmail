@@ -79,7 +79,7 @@ struct AdvancedTabView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .padding(.horizontal, 20)
                     
-                    TextField("www.examplesite.com", text: $viewModel.replyToAddress)
+                    TextField("www.examplesite.com", text: $viewModel.notarialDepositURL)
                         .font(.system(size: 15))
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)

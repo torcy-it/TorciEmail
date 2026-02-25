@@ -87,6 +87,7 @@ struct CertificateEmailModal: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                
             }
             .toolbarTitleDisplayMode(.inline)
         }

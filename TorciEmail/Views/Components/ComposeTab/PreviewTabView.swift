@@ -19,11 +19,11 @@ struct PreviewTabView: View {
                 SectionView(title: "Email Content") {
                     PreviewRow(label: "To", value: viewModel.toRecipients.isEmpty ? "—" : viewModel.toRecipients.joined(separator: ", "))
                     PreviewRow(label: "Cc", value: viewModel.ccRecipients.isEmpty ? "—" : viewModel.ccRecipients.joined(separator: ", "))
-                    PreviewRow(label: "From", value: "adolfo@studente.com")
+                    PreviewRow(label: "From", value: viewModel.fromEmail)
                     PreviewRow(label: "Issuer Name", value: viewModel.issuerName.isEmpty ? "—" : viewModel.issuerName)
                     PreviewRow(label: "Subject", value: viewModel.subject.isEmpty ? "—" : viewModel.subject)
                     PreviewRow(label: "Body", value: viewModel.body.isEmpty ? "—" : viewModel.body)
-                    PreviewRow(label: "Reply-To", value: viewModel.showReplyTo && !viewModel.replyToAddress.isEmpty ? viewModel.replyToAddress : "Not set", showDivider: false)
+                    PreviewRow(label: "Reply-To", value: viewModel.showReplyTo && !viewModel.replyToAddress.isEmpty ? viewModel.replyToAddress : "Not set")
                     PreviewRow(label: "Language", value: viewModel.language.uppercased())
                     PreviewRow(label: "Remove Sender Header", value: viewModel.removeSenderHeader ? "Yes" : "No", showDivider: false)
                 }
@@ -33,9 +33,11 @@ struct PreviewTabView: View {
                     PreviewRow(label: "Certification Level", value: viewModel.certificationLevel)
                     PreviewRow(label: "Affidavit Language", value: viewModel.affidavitLanguage == "en" ? "English" : "Italian")
                     PreviewRow(label: "Appearance", value: viewModel.appearance)
-                    PreviewRow(label: "Tracking Until", value: formatDate(viewModel.trackingUntil), showDivider: false)
+                    PreviewRow(label: "Tracking Until", value: formatDate(viewModel.trackingUntil))
+                    
                     let enabledSteps = viewModel.affidavitSteps.filter { $0.isEnabled }.map { $0.title }
-                    PreviewRow(label: "Enabled Steps", value: enabledSteps.isEmpty ? "—" : enabledSteps.joined(separator: ", "), showDivider: false)
+                    PreviewRow(label: "Enabled Steps", value: enabledSteps.isEmpty ? "—" : enabledSteps.joined(separator: ", "))
+                    
                     PreviewRow(label: "Allow Reasons", value: viewModel.allowReasons ? "Yes" : "No")
                     PreviewRow(label: "Agreement Possibilities", value: viewModel.agreementPossibilities)
                     
@@ -52,7 +54,7 @@ struct PreviewTabView: View {
                             PreviewRow(label: "Accept Reason Required", value: viewModel.acceptReasonsRequired ? "Yes" : "No", showDivider: false)
                         }
                     } else {
-                        // Se allowReasons è false, l'ultimo elemento è Agreement Possibilities
+                        PreviewRow(label: "Agreement Possibilities", value: viewModel.agreementPossibilities, showDivider: false)
                     }
                 }
                 
@@ -63,12 +65,11 @@ struct PreviewTabView: View {
                     PreviewRow(label: "Notarial Deposit", value: viewModel.notarialDepositEnabled ? "Enabled" : "Disabled")
                     
                     if viewModel.notarialDepositEnabled {
-                        PreviewRow(label: "Push Notification URL", value: viewModel.notarialDepositURL.isEmpty ? "—" : viewModel.notarialDepositURL, showDivider: false)
-                    } else {
-                        PreviewRow(label: "Cost Centre", value: viewModel.costCentreEnabled ? "Enabled" : "Disabled", showDivider: false)
+                        PreviewRow(label: "Push Notification URL", value: viewModel.notarialDepositURL.isEmpty ? "—" : viewModel.notarialDepositURL)
                     }
+                    
+                    PreviewRow(label: "Cost Centre", value: viewModel.costCentreEnabled ? "Enabled" : "Disabled", showDivider: false)
                 }
-                
                 
                 Spacer(minLength: 20)
             }

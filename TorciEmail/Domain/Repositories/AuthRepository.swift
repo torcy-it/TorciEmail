@@ -35,4 +35,7 @@ protocol AuthRepository {
     /// Verifica se il token è scaduto
     /// - Returns: true se il token è scaduto o non esiste
     func isTokenExpired() -> Bool
+    
+    func getCurrentUser() async throws -> String
+
 }

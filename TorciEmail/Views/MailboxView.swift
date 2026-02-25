@@ -224,7 +224,7 @@ struct MailboxView: View {
                             y: 4
                         )
                     
-                    Text(String(authVm.username.prefix { $0 != "@" }))
+                    Text(String(authVm.userEmail.prefix { $0 != "@" }))
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.black.opacity(0.7))
                         .lineLimit(1)
@@ -239,7 +239,10 @@ struct MailboxView: View {
         ToolbarSpacer(.fixed, placement: .bottomBar)
 
         ToolbarItem(placement: .bottomBar) {
-            Button { } label: {
+            NavigationLink {
+                EviMailComposeView(fromEmail: authVm.userEmail)
+                
+            } label: {
                 Image(systemName: "square.and.pencil")
             }
         }

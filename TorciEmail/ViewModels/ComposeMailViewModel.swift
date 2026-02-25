@@ -10,48 +10,59 @@ import Combine
 
 // MARK: - EviMail Compose ViewModel
 class ComposeMailViewModel: ObservableObject {
-    // MARK: - Email Data (Arrays for multiple recipients)
+
+    private let emailRepository: EmailRepository
+
+    // MARK: - Email Data
     @Published var toRecipients: [String] = []
     @Published var ccRecipients: [String] = []
-    @Published var recipientNames: [String: String] = [:] // email -> name mapping
+    @Published var ccRecipientsNames: [String: String] = [:]
+    @Published var recipientNames: [String: String] = [:]
     @Published var issuerName: String = "NamirialTest-LC"
     @Published var subject: String = ""
     @Published var body: String = ""
-    
+    @Published var fromEmail: String = "torci.ado@outlook.it"
+    @Published var availableFromEmails: [String] = ["torci.ado@outlook.it"]
+
+    // MARK: - UI State
+    @Published var isSending: Bool = false
+    @Published var errorMessage: String?
+
     // MARK: - Email Settings
     @Published var replyToAddress: String = ""
-    @Published var certificationLevel: String = "Advanced (EU)"
+    @Published var certificationLevel: String = "Advanced"
     @Published var language: String = "en"
     @Published var affidavitLanguage: String = "en"
     @Published var removeSenderHeader: Bool = false
-    
+
     // MARK: - UI State
     @Published var showCc: Bool = false
     @Published var showReplyTo: Bool = false
-    @Published var isSending: Bool = false
-    
+
     // MARK: - Certification Tab
     @Published var appearance: String = "Certified"
     @Published var trackingUntil: Date = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
 
     // MARK: - Affidavit Steps
+    // title  → mostrato nella UI
+    // apiValue → inviato all'API (corrisponde ai valori della web app)
     @Published var affidavitSteps: [AffidavitStep] = [
-        AffidavitStep(title: "Message Admission",                    isEnabled: true),
-        AffidavitStep(title: "Message Admission",     isAdvanced: true, isEnabled: true),
-        AffidavitStep(title: "Transmission Vault",                   isEnabled: true),
-        AffidavitStep(title: "Delivery result",                      isEnabled: true),
-        AffidavitStep(title: "Message Opened",                       isEnabled: false),
-        AffidavitStep(title: "Acceptance / Rejection Decision",      isEnabled: false),
-        AffidavitStep(title: "Acceptance / Rejection Decision", isAdvanced: true, isEnabled: false),
-        AffidavitStep(title: "Process Finalize",                     isEnabled: false),
-        AffidavitStep(title: "Process Finalize",      isAdvanced: true, isEnabled: false),
-        AffidavitStep(title: "Process Completion",                   isEnabled: false),
-        AffidavitStep(title: "Process Completion",    isAdvanced: true, isEnabled: false),
-        AffidavitStep(title: "Request certifications",               isEnabled: false),
-        AffidavitStep(title: "Revision Fact",                        isEnabled: false),
-        AffidavitStep(title: "Process Failure",                      isEnabled: false),
+        AffidavitStep(title: "Message Admission",               apiValue: "Submitted",          isEnabled: false),
+        AffidavitStep(title: "Message Admission",               apiValue: "SubmittedAdvanced",  isAdvanced: true, isEnabled: true),
+        AffidavitStep(title: "Transmission Vault",              apiValue: "TransmissionResult", isEnabled: true),
+        AffidavitStep(title: "Delivery result",                 apiValue: "DeliveryResult",     isEnabled: true),
+        AffidavitStep(title: "Message Opened",                  apiValue: "Read",               isEnabled: true),
+        AffidavitStep(title: "Acceptance / Rejection Decision", apiValue: "Committed",          isEnabled: false),
+        AffidavitStep(title: "Acceptance / Rejection Decision", apiValue: "CommittedAdvanced",  isAdvanced: true, isEnabled: true),
+        AffidavitStep(title: "Process Finalize",                apiValue: "Closed",             isEnabled: false),
+        AffidavitStep(title: "Process Finalize",                apiValue: "ClosedAdvanced",     isAdvanced: true, isEnabled: false),
+        AffidavitStep(title: "Process Completion",              apiValue: "Complete",           isEnabled: true),
+        AffidavitStep(title: "Process Completion",              apiValue: "CompleteAdvanced",   isAdvanced: true, isEnabled: false),
+        AffidavitStep(title: "Request certifications",          apiValue: "OnDemand",           isEnabled: false),
+        AffidavitStep(title: "Revision Fact",                   apiValue: "Event",              isEnabled: true),
+        AffidavitStep(title: "Process Failure",                 apiValue: "Failed",             isEnabled: true),
     ]
-    
+
     // MARK: - Agreement Settings
     @Published var agreementPossibilities: String = "Accept"
     @Published var allowReasons: Bool = false
@@ -59,7 +70,7 @@ class ComposeMailViewModel: ObservableObject {
     @Published var rejectReasons: [String] = []
     @Published var acceptReasonsRequired: Bool = false
     @Published var rejectReasonsRequired: Bool = false
-    
+
     // MARK: - Advanced Tab (Custody Settings)
     @Published var showCustodyAccessControl: Bool = false
     @Published var custodyAccessControl: [String] = [
@@ -73,92 +84,144 @@ class ComposeMailViewModel: ObservableObject {
     @Published var notarialDepositEnabled: Bool = false
     @Published var notarialDepositURL: String = ""
     @Published var costCentreEnabled: Bool = false
+    @Published var costCentre: String = "Namirial"
     @Published var showFutureImplementationAlert: Bool = true
-    
+
     // MARK: - Constants
     let availableLanguages = ["en", "it"]
     let certificationLevels = ["Basic", "Advanced", "Qualified"]
-    
-    // MARK: - Create EmailDraft
-    func createEmailDraft() -> [EmailDraft]? {
-        // Validate required fields
-        guard !toRecipients.isEmpty else {
-            print("Error: At least one recipient is required")
-            return nil
-        }
-        
-        guard !subject.isEmpty else {
-            print("Error: Subject is required")
-            return nil
-        }
-        
-        // Create email options
-        let options = EmailOptions(
-            certificationLevel: certificationLevel,
-            language: language,
-            affidavitLanguage: affidavitLanguage
-        )
-        
-        // Create carbon copy if provided
-        let carbonCopy: CarbonCopyDraft? = showCc && !ccRecipients.isEmpty ?
-            CarbonCopyDraft(
-                name: recipientNames[ccRecipients.first!] ?? "",
-                emailAddress: ccRecipients.first!
-            ) : nil
-        
-        // Create a draft for each recipient
-        return toRecipients.map { recipientEmail in
-            EmailDraft(
-                subject: subject,
-                body: body,
-                issuerName: issuerName,
-                recipientName: recipientNames[recipientEmail] ?? "",
-                recipientEmail: recipientEmail,
-                replyTo: showReplyTo && !replyToAddress.isEmpty ? replyToAddress : nil,
-                carbonCopy: carbonCopy,
-                options: options,
-                attachments: nil
-            )
-        }
-    }
-    
-    // MARK: - Email Actions
-    func sendEmail() async -> Bool {
-        guard let drafts = createEmailDraft() else {
-            return false
-        }
-        
-        isSending = true
-        
-        // TODO: Implement actual email sending with your repository
-        print("Sending \(drafts.count) email(s)...")
-        for draft in drafts {
-            print("To: \(draft.recipientEmail)")
-        }
-        print("Subject: \(drafts.first?.subject ?? "")")
-        
-        // Simulate network delay
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        isSending = false
-        return true
-    }
-    
+
     // MARK: - Validation
     func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
-    
+
     var canSend: Bool {
-        !toRecipients.isEmpty &&
-        !subject.isEmpty &&
-        !body.isEmpty &&
-        toRecipients.allSatisfy { isValidEmail($0) }
+        guard !toRecipients.isEmpty else { return false }
+        guard !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+
+        let allRecipientsValid = toRecipients.allSatisfy { recipient in
+            isValidEmail(extractEmail(from: recipient))
+        }
+        guard allRecipientsValid else { return false }
+
+        if showReplyTo && !replyToAddress.trimmingCharacters(in: .whitespaces).isEmpty {
+            guard isValidEmail(replyToAddress) else { return false }
+        }
+
+        return true
     }
-    
+
+    // MARK: - Helper
+    private func extractEmail(from recipient: String) -> String {
+        if let range = recipient.range(of: "<") {
+            return String(recipient[..<range.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+        }
+        return recipient.trimmingCharacters(in: .whitespaces)
+    }
+
     var disclosureCanCollapse: Bool {
         ccRecipients.isEmpty
+    }
+
+    init(fromEmail: String = "", emailRepository: EmailRepository = EmailRepositoryImpl()) {
+        self.fromEmail = fromEmail
+        self.availableFromEmails = [fromEmail]
+        self.emailRepository = emailRepository
+    }
+
+    // MARK: - Email Actions
+    func sendEmail() async -> Bool {
+        guard let draft = createEmailDraft() else {
+            errorMessage = "Errore nella creazione della bozza"
+            return false
+        }
+
+        isSending = true
+        errorMessage = nil
+
+        do {
+            let eviId = try await emailRepository.sendEmail(draft)
+            print("Email inviata con successo - EVI ID: \(eviId)")
+            isSending = false
+            return true
+
+        } catch let error as RepositoryError {
+            errorMessage = error.errorDescription
+            print("Errore invio: \(error.errorDescription ?? "Unknown")")
+            isSending = false
+            return false
+        } catch {
+            errorMessage = "Errore sconosciuto durante l'invio"
+            print("Unexpected error: \(error)")
+            isSending = false
+            return false
+        }
+    }
+
+    // MARK: - Create EmailDraft
+    func createEmailDraft() -> EmailDraft? {
+        guard !toRecipients.isEmpty else {
+            errorMessage = "Aggiungi almeno un destinatario"
+            return nil
+        }
+
+        guard !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Inserisci un oggetto"
+            return nil
+        }
+
+        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Inserisci un corpo del messaggio"
+            return nil
+        }
+
+        // Usa apiValue invece di title per inviare i valori corretti all'API
+        let enabledAffidavits = affidavitSteps
+            .filter { $0.isEnabled }
+            .map { $0.apiValue }
+
+        let options = EmailOptions(
+            certificationLevel: certificationLevel,
+            language: language,
+            affidavitLanguage: affidavitLanguage,
+            appearance: appearance,
+            agreementPossibilities: agreementPossibilities,
+            allowReasons: allowReasons,
+            acceptReasons: acceptReasons,
+            rejectReasons: rejectReasons,
+            acceptReasonsRequired: acceptReasonsRequired,
+            rejectReasonsRequired: rejectReasonsRequired,
+            affidavitKinds: enabledAffidavits,
+            pushNotificationUrl: notarialDepositEnabled ? notarialDepositURL : nil,
+            costCentre: costCentreEnabled ? costCentre : nil
+        )
+
+        let firstRecipient = toRecipients.first!
+        let firstRecipientEmail = extractEmail(from: firstRecipient)
+
+        let carbonCopy: [CarbonCopyDraft]? = showCc && !ccRecipients.isEmpty ?
+            ccRecipients.map { recipient in
+                CarbonCopyDraft(
+                    name: ccRecipientsNames[recipient] ?? "",
+                    emailAddress: extractEmail(from: recipient)
+                )
+            } : nil
+
+        return EmailDraft(
+            subject: subject.trimmingCharacters(in: .whitespacesAndNewlines),
+            body: body.trimmingCharacters(in: .whitespacesAndNewlines),
+            issuerName: issuerName,
+            recipientName: recipientNames[firstRecipient] ?? "",
+            recipientEmail: firstRecipientEmail,
+            replyTo: showReplyTo && !replyToAddress.isEmpty ? replyToAddress : nil,
+            carbonCopy: carbonCopy,
+            options: options,
+            attachments: nil
+        )
     }
 }

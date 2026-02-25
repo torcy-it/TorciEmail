@@ -15,21 +15,21 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
-    @Published var username: String = ""
     @Published var password: String = ""
     @Published var errorMessage: String?
     @Published var showSessionExpired: Bool = false
+    @Published var userEmail: String = ""
     
     // MARK: - Dependencies
     private let repository: AuthRepository
-    private let apiService = VaporAPIService.shared  // Solo per observare sessionExpired
+    private let apiService = VaporAPIService.shared
     
     private var cancellables = Set<AnyCancellable>()
     private var tokenExpirationTimer: Timer?
     
     // MARK: - Init
     
-    /// Dependency Injection: il ViewModel dipende dal protocollo
+    /// Dependency Injection: ViewModel depends on the repository protocol
     init(repository: AuthRepository = AuthRepositoryImpl()) {
         self.repository = repository
         checkAuthStatus()
@@ -45,6 +45,10 @@ final class AuthViewModel: ObservableObject {
             print("Token expired on app launch, cleaning up...")
             cleanupAuth()
         } else if isAuthenticated {
+            print("User is authenticated, refreshing user info...")
+            Task {
+                await refreshUserInfo()
+            }
             startTokenExpirationMonitoring()
         }
     }
@@ -84,7 +88,7 @@ final class AuthViewModel: ObservableObject {
             return
         }
         
-        // Controlla ogni 30 secondi
+        // Check every 30 seconds
         tokenExpirationTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkTokenExpiration()
@@ -112,37 +116,60 @@ final class AuthViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Refresh User Info
+    
+    /// Retrieves current user information from the server using the token
+    /// If it fails, performs logout
+    private func refreshUserInfo() async {
+        print("Refreshing user info from server...")
+        print("userEmail is empty: \(self.userEmail.isEmpty)")
+        print("Token expired: \(repository.isTokenExpired())")
+        
+        if self.userEmail.isEmpty && !repository.isTokenExpired() {
+            print("Calling getCurrentUser from repository...")
+            do {
+                let email = try await repository.getCurrentUser()
+                self.userEmail = email
+                print("User email retrieved and set to: \(email)")
+            } catch {
+                print("Failed to get user info: \(error.localizedDescription)")
+            }
+        } else {
+            print("Skipped getCurrentUser - userEmail not empty or token expired")
+        }
+    }
+    
     // MARK: - Login
     
     func login() async {
-        guard !username.isEmpty, !password.isEmpty else {
-            errorMessage = "Inserisci email e password"
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        print("Attempting login for: \(username)")
-        
-        do {
-            // Usa il repository invece dell'apiService
-            _ = try await repository.login(username: username, password: password)
-            isAuthenticated = true
-            
-            startTokenExpirationMonitoring()
-            
-            print("Login successful")
-        } catch let error as RepositoryError {
-            errorMessage = error.errorDescription
-            print("Login failed: \(error.errorDescription ?? "Unknown")")
-        } catch {
-            errorMessage = "Errore sconosciuto"
-            print("Unexpected error: \(error)")
-        }
-        
-        isLoading = false
-    }
+         guard !userEmail.isEmpty, !password.isEmpty else {
+             errorMessage = "Inserisci email e password"
+             return
+         }
+         
+         isLoading = true
+         errorMessage = nil
+         
+         print("Attempting login for: \(userEmail)")
+         
+         do {
+             // Usa il repository invece dell'apiService
+             _ = try await repository.login(username: userEmail, password: password)
+             isAuthenticated = true
+             
+             startTokenExpirationMonitoring()
+             
+             print("Login successful")
+         } catch let error as RepositoryError {
+             errorMessage = error.errorDescription
+             print("Login failed: \(error.errorDescription ?? "Unknown")")
+         } catch {
+             errorMessage = "Errore sconosciuto"
+             print("Unexpected error: \(error)")
+         }
+         
+         isLoading = false
+     }
     
     // MARK: - Logout
     
@@ -155,7 +182,6 @@ final class AuthViewModel: ObservableObject {
         print("Attempting logout")
         
         do {
-            // Usa il repository
             try await repository.logout()
             cleanupAuth()
             print("Logout successful")
@@ -164,7 +190,7 @@ final class AuthViewModel: ObservableObject {
             print("Logout failed: \(error.errorDescription ?? "Unknown")")
             cleanupAuth()
         } catch {
-            errorMessage = "Errore durante il logout"
+            errorMessage = "Error during logout"
             print("Unexpected error: \(error)")
             cleanupAuth()
         }
@@ -193,7 +219,7 @@ final class AuthViewModel: ObservableObject {
     
     private func cleanupAuth() {
         isAuthenticated = false
-        username = ""
+        userEmail = ""
         password = ""
         stopTokenExpirationMonitoring()
         repository.clearAuth()

@@ -24,7 +24,7 @@ struct LoginPageView: View {
             }
             
             VStack(spacing: 39) {
-                TextField("Your Email", text: $authViewModel.username)
+                TextField("Your Email", text: $authViewModel.userEmail)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -67,7 +67,7 @@ struct LoginPageView: View {
                 .cornerRadius(14)
                 .font(Font.system(size: 18, weight: .semibold))
             }
-            .disabled(authViewModel.username.isEmpty || authViewModel.password.isEmpty || authViewModel.isLoading)
+            .disabled(authViewModel.userEmail.isEmpty || authViewModel.password.isEmpty || authViewModel.isLoading)
             
             Spacer()
         }

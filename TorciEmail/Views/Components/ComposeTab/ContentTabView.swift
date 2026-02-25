@@ -11,13 +11,15 @@ import SwiftUI
 // MARK: - Content Tab View
 struct ContentTabView: View {
     @ObservedObject var viewModel: ComposeMailViewModel
-
     var body: some View {
         VStack(spacing: 0) {
             // MARK: - To Field
             RecipientTagsView(
                 label: "To:",
-                recipients: $viewModel.toRecipients
+                recipients: $viewModel.toRecipients,
+                onAddRecipient: { email, name in
+                    viewModel.recipientNames[email] = name
+                }
             )
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -29,52 +31,77 @@ struct ContentTabView: View {
                 isExpanded: $viewModel.showCc,
                 content: {
                     VStack(spacing: 16) {
+                
                         RecipientTagsView(
                             label: "Cc:",
-                            recipients: $viewModel.ccRecipients
+                            recipients: $viewModel.ccRecipients,
+                            onAddRecipient: { email, name in
+                                viewModel.ccRecipientsNames[email] = name
+                            }
                         )
-
+                        .padding(.horizontal)
+                        
                         Divider()
-
-                        HStack {
-                            Text("From:")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("adolfo@studente.com")
-                                .font(.system(size: 16))
-                                .foregroundColor(.blue)
+                        
+                        Menu {
+                            ForEach(viewModel.availableFromEmails, id: \.self) { email in
+                                Button {
+                                    viewModel.fromEmail = email
+                                } label: {
+                                    if viewModel.fromEmail == email {
+                                        Label(email, systemImage: "checkmark")
+                                    } else {
+                                        Text(email)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text("From:")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(viewModel.fromEmail)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color(.tail))
+                            }.padding(.horizontal)
                         }
-
+                        
                         Divider()
-
+                        
                         HStack {
+                            
                             Text("Issuer Identification:")
                                 .font(.system(size: 16))
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Text(viewModel.issuerName)
+                            TextField("", text: $viewModel.issuerName)
                                 .font(.system(size: 16))
                                 .foregroundColor(.secondary)
+                                .frame(width: 140)
+                            
                         }
+                        .padding(.horizontal)
+                     
                     }
                     .padding(.top, 8)
+                    
                 },
                 label: {
                     HStack {
                         Text("Cc, From: ")
                             .font(.system(size: 16))
                             .foregroundColor(.secondary)
-
-                        Text("adolfo@studente.com")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
-
+                        
                         Spacer()
+                        
+                        Text(viewModel.fromEmail)
+                            .font(.system(size: 16))
+                            .foregroundColor(Color(.tail))
                     }
+                    .padding(.horizontal)
                 }
             )
-            .padding(.horizontal)
             .padding(.vertical, 16)
             .disclosureGroupStyle(CustomDisclosureStyle())
 
@@ -92,7 +119,7 @@ struct ContentTabView: View {
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $viewModel.body)
                     .font(.system(size: 16))
-                    .frame(minHeight: 200)
+                    .frame(minHeight: 150)
                     .scrollContentBackground(.hidden)
 
                 if viewModel.body.isEmpty {
@@ -100,14 +127,13 @@ struct ContentTabView: View {
                         .font(.system(size: 16))
                         .foregroundColor(.primary)
                         .padding(.top, 8)
-                        .padding(.leading, 5)
                         .allowsHitTesting(false)
                 }
             }
             .padding(.horizontal)
             .padding(.top, 16)
 
-            Spacer(minLength: 10)
+            Spacer(minLength: 20)
 
             // MARK: - Settings Section (with background)
             VStack(spacing: 0) {

@@ -5,16 +5,17 @@
 //  Created by Adolfo Torcicollo on 18/02/26.
 //
 
-
 import SwiftUI
 
 // MARK: - Affidavit Step Model
 struct AffidavitStep: Identifiable {
     let id = UUID()
     let title: String
+    let apiValue: String
     var isAdvanced: Bool = false
     var isEnabled: Bool = true
 }
+
 enum FocusedReason {
     case accept, reject
 }
@@ -31,283 +32,242 @@ struct CertificationTabView: View {
     @State private var rejectionReasons: [String] = []
     @State private var newRejectionReason: String = ""
     @FocusState private var isRejectionReasonFocused: Bool
-    
-    
-    
-        var body: some View {
+
+    var body: some View {
+        VStack(spacing: 0) {
+
             VStack(spacing: 0) {
-
-                VStack(spacing : 0) {
-                    // MARK: - Certification Level
-                    Menu {
-                        ForEach(["Advanced (EU)", "Standard (EU)"], id: \.self) { option in
-                            Button {
-                                viewModel.certificationLevel = option
-                            } label: {
-                                if viewModel.certificationLevel == option {
-                                    Label(option, systemImage: "checkmark")
-                                } else {
-                                    Text(option)
-                                }
+                // MARK: - Certification Level
+                Menu {
+                    ForEach(["Advanced (EU)", "Standard (EU)"], id: \.self) { option in
+                        Button {
+                            viewModel.certificationLevel = option
+                        } label: {
+                            if viewModel.certificationLevel == option {
+                                Label(option, systemImage: "checkmark")
+                            } else {
+                                Text(option)
                             }
                         }
-                    } label: {
-                        HStack {
-                            Text("Certification Level:")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Text(viewModel.certificationLevel)
-                                .font(.system(size: 17))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 18)
-                        .padding(.top, 16)
                     }
-
-                
-
-                    // MARK: - Affidavit Language
-                    Menu {
-                        ForEach(viewModel.availableLanguages, id: \.self) { lang in
-                            Button {
-                                viewModel.affidavitLanguage = lang
-                            } label: {
-                                if viewModel.affidavitLanguage == lang {
-                                    Label(lang == "en" ? "English" : "Italian", systemImage: "checkmark")
-                                } else {
-                                    Text(lang == "en" ? "English" : "Italian")
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            Text("Affidavit Language:")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Text(viewModel.affidavitLanguage == "en" ? "English" : "Italian")
-                                .font(.system(size: 17))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 18)
-                    }
-
-            
-
-                    // MARK: - Appearance
-                    Menu {
-                        ForEach(["Certified", "As Is"], id: \.self) { option in
-                            Button {
-                                viewModel.appearance = option
-                            } label: {
-                                if viewModel.appearance == option {
-                                    Label(option, systemImage: "checkmark")
-                                } else {
-                                    Text(option)
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            Text("Appearance:")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Text(viewModel.appearance)
-                                .font(.system(size: 17))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 18)
-                    }
-
-                
-
-                    // MARK: - Tracking Until
+                } label: {
                     HStack {
-                        Text("Tracking Until:")
+                        Text("Certification Level:")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.primary)
                         Spacer()
-                        DatePicker(
-                            "",
-                            selection: $viewModel.trackingUntil,
-                            displayedComponents: .date
-                        )
-                        .labelsHidden()
-                        .tint(Color(red: 0.35, green: 0.66, blue: 0.54))
+                        Text(viewModel.certificationLevel)
+                            .font(.system(size: 17))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 18)
-                    .padding(.bottom, 10)
+                    .padding(.top, 16)
                 }
-                .background(Color(red: 0.88, green: 0.95, blue: 0.92))
-                .cornerRadius(16)
-                .padding(.horizontal)
-                .padding(.bottom, 20)
 
-                // MARK: - Affidavit Grid
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Affidavit")
-                        .font(.system(size: 17, weight: .semibold))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-
-                    AffidavitGridView(steps: $viewModel.affidavitSteps)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 16)
-                }
-                .background(Color(red: 0.88, green: 0.95, blue: 0.92))
-                .cornerRadius(16)
-                .padding(.horizontal)
-                .padding(.bottom, 20)
-                
-                VStack {
-                    
+                // MARK: - Affidavit Language
+                Menu {
+                    ForEach(viewModel.availableLanguages, id: \.self) { lang in
+                        Button {
+                            viewModel.affidavitLanguage = lang
+                        } label: {
+                            if viewModel.affidavitLanguage == lang {
+                                Label(lang == "en" ? "English" : "Italian", systemImage: "checkmark")
+                            } else {
+                                Text(lang == "en" ? "English" : "Italian")
+                            }
+                        }
+                    }
+                } label: {
                     HStack {
-                        Text("Allow recipient to add a reason")
-                            .font(.system(size: 16, weight: .medium))
+                        Text("Affidavit Language:")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
                         Spacer()
-                        Toggle("", isOn: $viewModel.allowReasons)
-                            .labelsHidden()
+                        Text(viewModel.affidavitLanguage == "en" ? "English" : "Italian")
+                            .font(.system(size: 17))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 18)
+                }
+
+                // MARK: - Appearance
+                Menu {
+                    ForEach(["Certified", "As Is"], id: \.self) { option in
+                        Button {
+                            viewModel.appearance = option
+                        } label: {
+                            if viewModel.appearance == option {
+                                Label(option, systemImage: "checkmark")
+                            } else {
+                                Text(option)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text("Appearance:")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(viewModel.appearance)
+                            .font(.system(size: 17))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 18)
+                }
+
+                // MARK: - Tracking Until
+                HStack {
+                    Text("Tracking Until:")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    DatePicker(
+                        "",
+                        selection: $viewModel.trackingUntil,
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .tint(Color(red: 0.35, green: 0.66, blue: 0.54))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 18)
+                .padding(.bottom, 10)
+            }
+            .background(Color(red: 0.88, green: 0.95, blue: 0.92))
+            .cornerRadius(16)
+            .padding(.horizontal)
+            .padding(.bottom, 20)
+
+            // MARK: - Affidavit Grid
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Affidavit")
+                    .font(.system(size: 17, weight: .semibold))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+
+                AffidavitGridView(steps: $viewModel.affidavitSteps)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
+            .background(Color(red: 0.88, green: 0.95, blue: 0.92))
+            .cornerRadius(16)
+            .padding(.horizontal)
+            .padding(.bottom, 20)
+
+            VStack {
+                HStack {
+                    Text("Allow recipient to add a reason")
+                        .font(.system(size: 16, weight: .medium))
+                    Spacer()
+                    Toggle("", isOn: $viewModel.allowReasons)
+                        .labelsHidden()
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+
+                // MARK: - Agreement Possibilities
+                if viewModel.allowReasons {
+                    Menu {
+                        ForEach(["Accept", "Accept / Reject", "Reject"], id: \.self) { opt in
+                            Button {
+                                viewModel.agreementPossibilities = opt
+                            } label: {
+                                if viewModel.agreementPossibilities == opt {
+                                    Label(opt, systemImage: "checkmark")
+                                } else {
+                                    Text(opt)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text("Agreement Possibilities:")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(viewModel.agreementPossibilities)
+                                .font(.system(size: 17))
+                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
-            
-                    // MARK: - Agreement Possibilities
-                    if viewModel.allowReasons{
-                        
-                        Menu {
-                            ForEach(["Accept", "Accept / Reject", "Reject"], id: \.self) { opt in
-                                Button {
-                                    viewModel.agreementPossibilities = opt
-                                } label: {
-                                    if viewModel.agreementPossibilities == opt {
-                                        Label(opt, systemImage: "checkmark")
-                                    } else {
-                                        Text(opt)
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack{
-                                Text("Agreement Possibilities:")
+
+                    if viewModel.agreementPossibilities != "Reject" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Acceptance reasons")
+                                .font(.system(size: 16, weight: .semibold))
+                                .padding(.horizontal, 4)
+
+                            ReasonTagInputView(
+                                reasons: $viewModel.acceptReasons,
+                                newReason: $newAcceptReason,
+                                placeholder: "Add acceptance reason..."
+                            )
+
+                            HStack(spacing: 12) {
+                                Text("Require accept reason")
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Text(viewModel.agreementPossibilities)
-                                    .font(.system(size: 17))
-                                    .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
-
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.35, green: 0.66, blue: 0.54))
+                                Spacer()
+                                Toggle("", isOn: $viewModel.acceptReasonsRequired)
+                                    .labelsHidden()
                             }
-                            
+                            .padding(.horizontal, 4)
+                            .padding(.top, 2)
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        
-                        if viewModel.agreementPossibilities != "Reject" {
-
-                            VStack(alignment: .leading, spacing: 8) {
-
-                                Text("Acceptance reasons")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .padding(.horizontal,4)
-/*
-                                Text("Add one or more reasons the recipient can choose when accepting.")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.secondary)
-*/
-                                ReasonTagInputView(
-                                    reasons: $viewModel.acceptReasons,
-                                    newReason: $newAcceptReason,
-                                    placeholder: "Add acceptance reason..."
-                                )
-
-                                HStack(spacing: 12) {
-                                    Text("Require accept reason")
-                                        .font(.system(size: 16, weight: .medium))
-
-                                    Spacer()
-
-                                    Toggle("", isOn: $viewModel.acceptReasonsRequired)
-                                        .labelsHidden()
-                                        
-                                }
-                                .padding(.horizontal,4)
-                                .padding(.top, 2)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                        }
-
-
-
-                        if viewModel.agreementPossibilities != "Accept"{
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-
-                                // Label + spiegazione (sopra)
-                                Text("Rejection reasons")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .padding(.horizontal,4)
-/*
-                                Text("Add one or more reasons the recipient can choose when rejecting.")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.secondary)
-*/
-                                // Input motivi
-                                ReasonTagInputView(
-                                    reasons: $viewModel.rejectReasons,
-                                    newReason: $newRejectReason,
-                                    placeholder: "Add rejection reason..."
-                                )
-
-                                // Toggle più vicino e “compatto”
-                                HStack {
-                                    Text("Require a reason to reject")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Spacer()
-                                    Toggle("", isOn: $viewModel.rejectReasonsRequired)
-                                        .labelsHidden()
-                                        
-                                }
-                                .padding(.horizontal,4)
-                                .padding(.top, 2)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 5)
-                        
-           
-                        }
-                        
+                        .padding(.vertical, 8)
                     }
 
-                    
+                    if viewModel.agreementPossibilities != "Accept" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Rejection reasons")
+                                .font(.system(size: 17, weight: .semibold))
+                                .padding(.horizontal, 4)
+
+                            ReasonTagInputView(
+                                reasons: $viewModel.rejectReasons,
+                                newReason: $newRejectReason,
+                                placeholder: "Add rejection reason..."
+                            )
+
+                            HStack {
+                                Text("Require a reason to reject")
+                                    .font(.system(size: 16, weight: .medium))
+                                Spacer()
+                                Toggle("", isOn: $viewModel.rejectReasonsRequired)
+                                    .labelsHidden()
+                            }
+                            .padding(.horizontal, 4)
+                            .padding(.top, 2)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 5)
+                    }
                 }
-                .background(Color(red: 0.88, green: 0.95, blue: 0.92))
-                .cornerRadius(16)
-                .padding(.horizontal)
-                .padding(.bottom, 20)
-                    
             }
+            .background(Color(red: 0.88, green: 0.95, blue: 0.92))
+            .cornerRadius(16)
+            .padding(.horizontal)
+            .padding(.bottom, 20)
         }
-    
+    }
 
     // MARK: - Generic Menu Row
     @ViewBuilder
@@ -345,9 +305,9 @@ struct CertificationTabView: View {
         .padding(.horizontal)
         .padding(.bottom, 20)
     }
-    
 }
 
+// MARK: - Reason Tag Input View
 struct ReasonTagInputView: View {
     @Binding var reasons: [String]
     @Binding var newReason: String
@@ -394,20 +354,16 @@ struct ReasonTagInputView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 15)
             }
-        
         }
         .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
         .cornerRadius(10)
-        
-        
     }
 }
 
 // MARK: - Affidavit Grid
 struct AffidavitGridView: View {
     @Binding var steps: [AffidavitStep]
-
     let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
 
     var body: some View {
@@ -423,24 +379,21 @@ struct AffidavitGridView: View {
 struct AffidavitStepCell: View {
     @Binding var step: AffidavitStep
 
-    private let enabledBg     = Color(red: 0.68, green: 0.90, blue: 0.84)
-    private let disabledBg    = Color(.systemGray5)
-    private let enabledIcon   = Color(red: 0.15, green: 0.15, blue: 0.15)
-    private let disabledIcon  = Color(.systemGray3)
+    private let enabledBg   = Color(red: 0.68, green: 0.90, blue: 0.84)
+    private let disabledBg  = Color(.systemGray5)
+    private let enabledIcon = Color(red: 0.15, green: 0.15, blue: 0.15)
+    private let disabledIcon = Color(.systemGray3)
 
     var body: some View {
         Button {
             step.isEnabled.toggle()
         } label: {
             VStack(spacing: 0) {
-
-                // ICONA — altezza fissa uguale per tutti
                 Image(systemName: "checkmark.seal\(step.isEnabled ? ".fill" : "")")
                     .font(.system(size: 32, weight: step.isEnabled ? .bold : .regular))
                     .foregroundColor(step.isEnabled ? enabledIcon : disabledIcon)
                     .frame(height: 44)
 
-                // TESTO — altezza fissa uguale per tutti (3 righe max)
                 Text(step.title)
                     .font(.system(size: 9, weight: step.isEnabled ? .bold : .regular))
                     .foregroundColor(step.isEnabled ? .primary : .secondary)
@@ -448,7 +401,6 @@ struct AffidavitStepCell: View {
                     .lineLimit(3)
                     .frame(height: 36)
 
-                // BADGE ADVANCED — sempre presente, invisibile se non advanced
                 Text("Advanced")
                     .font(.system(size: 9, weight: step.isEnabled ? .bold : .regular))
                     .foregroundColor(step.isEnabled ? .black : .gray)
@@ -456,7 +408,6 @@ struct AffidavitStepCell: View {
                     .padding(.vertical, 2)
                     .opacity(step.isAdvanced ? 1.0 : 0.0)
                     .frame(height: 18)
-
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 6)
@@ -468,13 +419,4 @@ struct AffidavitStepCell: View {
         }
         .buttonStyle(.plain)
     }
-}
-
-
-// MARK: - Preview
-#Preview {
-    
-    EviMailComposeView()
-    
-   
 }

@@ -29,7 +29,7 @@ struct ProfileView: View {
                     )
                     .shadow(radius: 10)
                 
-                Text(String(authVm.username.prefix { $0 != "@" }))
+                Text(String(authVm.userEmail.prefix { $0 != "@" }))
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.black)
                 

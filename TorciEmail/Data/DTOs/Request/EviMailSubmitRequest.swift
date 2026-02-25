@@ -16,7 +16,7 @@ struct EviMailSubmitRequest: Codable {
     let replyTo: String?
     let disableSenderHeader: Bool?
     let recipient: SubmitRecipient
-    let carbonCopy: SubmitCarbonCopy?
+    let carbonCopy: [SubmitCarbonCopy]?
     let options: SubmitOptions?
     let attachments: [SubmitAttachment]?
     
@@ -36,7 +36,7 @@ struct EviMailSubmitRequest: Codable {
 // MARK: - Submit Recipient
 
 struct SubmitRecipient: Codable {
-    let legalName: String
+    let legalName: String?
     let emailAddress: String
     
     enum CodingKeys: String, CodingKey {

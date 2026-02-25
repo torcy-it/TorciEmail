@@ -2,9 +2,17 @@ import SwiftUI
 
 // MARK: - Main EviMail Compose View
 struct EviMailComposeView: View {
-    @StateObject private var viewModel = ComposeMailViewModel()
+    @StateObject private var viewModel: ComposeMailViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: ComposeTab = .content
+    @State private var showValidationAlert: Bool = false
+    @State private var validationMessage: String = ""
+    @State private var validationSymbol: String = ""
+    @State private var sendTask: Task<Void, Never>? = nil
+
+    init(fromEmail: String) {
+        _viewModel = StateObject(wrappedValue: ComposeMailViewModel(fromEmail: fromEmail))
+    }
 
     var body: some View {
         NavigationStack {
@@ -23,21 +31,47 @@ struct EviMailComposeView: View {
             .background(Color(.systemBackground))
             .navigationTitle("New EviMail")
             .navigationBarTitleDisplayMode(.large)
+            .alert("", isPresented: $showValidationAlert) {
+                Button("OK") { showValidationAlert = false }
+            } message: {
+                Label(validationMessage, systemImage: validationSymbol)
+            }
+            .alert("", isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            )) {
+                Button("OK") { viewModel.errorMessage = nil }
+            } message: {
+                Label(viewModel.errorMessage ?? "", systemImage: "xmark.octagon")
+            }
+            .onDisappear {
+                sendTask?.cancel()
+                viewModel.isSending = false
+                viewModel.errorMessage = nil
+            }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                }
-
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        Task {
-                            let success = await viewModel.sendEmail()
-                            if success {
-                                dismiss()
+                        if viewModel.toRecipients.isEmpty {
+                            validationMessage = "Add at least one recipient"
+                            validationSymbol = "person.crop.circle.badge.exclamationmark"
+                            showValidationAlert = true
+                        } else if viewModel.subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            validationMessage = "Subject cannot be empty"
+                            validationSymbol = "text.badge.exclamationmark"
+                            showValidationAlert = true
+                        } else if viewModel.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            validationMessage = "Email body cannot be empty"
+                            validationSymbol = "doc.badge.exclamationmark"
+                            showValidationAlert = true
+                        } else if viewModel.showReplyTo && !viewModel.replyToAddress.isEmpty && !viewModel.isValidEmail(viewModel.replyToAddress) {
+                            validationMessage = "Reply-To address is not valid"
+                            validationSymbol = "envelope.badge.exclamationmark"
+                            showValidationAlert = true
+                        } else {
+                            sendTask = Task {
+                                let success = await viewModel.sendEmail()
+                                if success { dismiss() }
                             }
                         }
                     } label: {
@@ -47,7 +81,7 @@ struct EviMailComposeView: View {
                             Image(systemName: "paperplane")
                         }
                     }
-                    .disabled(!viewModel.canSend || viewModel.isSending)
+                    .disabled(viewModel.isSending)
                 }
 
                 ToolbarItem(placement: .bottomBar) {
@@ -79,12 +113,4 @@ struct EviMailComposeView: View {
     private var previewTab: some View {
         PreviewTabView(viewModel: viewModel)
     }
-
 }
-
-// MARK: - Preview
-#Preview {
-    EviMailComposeView()
-}
-
-

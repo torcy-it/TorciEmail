@@ -17,7 +17,45 @@ final class AuthRepositoryImpl: AuthRepository {
         self.apiService = apiService
     }
     
+    
+    
     // MARK: - AuthRepository
+    
+    func getCurrentUser() async throws -> String {
+        do {
+            let response = try await apiService.getCurrentUser()
+            print("Repository: Retrieved user email: \(response.email)")
+            return response.email
+            
+        } catch let apiError as APIError {
+            throw mapAPIError(apiError)
+        } catch {
+            throw RepositoryError.unknown
+        }
+    }
+    
+    private func extractEmailFromToken(_ token: String) -> String? {
+        let parts = token.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        
+        let payloadPart = String(parts[1])
+        
+        var base64 = payloadPart
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        
+        while base64.count % 4 != 0 {
+            base64.append("=")
+        }
+        
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let email = json["sub"] as? String else {
+            return nil
+        }
+        
+        return email
+    }
     
     func login(username: String, password: String) async throws -> String {
         do {
@@ -46,6 +84,7 @@ final class AuthRepositoryImpl: AuthRepository {
             throw RepositoryError.unknown
         }
     }
+
     
     func isAuthenticated() -> Bool {
         return apiService.isAuthenticated && !isTokenExpired()

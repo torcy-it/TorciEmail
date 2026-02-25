@@ -61,6 +61,19 @@ class VaporAPIService: ObservableObject {
         return authToken != nil
     }
     
+    func getCurrentUser() async throws -> UserInfoResponse {
+        print("Fetching current user info")
+        
+        let response: UserInfoResponse = try await get(
+            endpoint: "/me",
+            requiresAuth: true
+        )
+        
+        print("Retrieved user info: \(response.email)")
+        
+        return response
+    }
+    
     // MARK: - Authentication
     
     func login(username: String, password: String) async throws -> String {
@@ -89,6 +102,7 @@ class VaporAPIService: ObservableObject {
         clearAuth()
         print("Logout successful")
     }
+    
     
     func clearAuth() {
         self.authToken = nil
