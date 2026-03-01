@@ -32,7 +32,21 @@ enum APIError: LocalizedError {
             return "Errore HTTP \(code)"
         case .decodingError(let error):
             return "Errore nella decodifica dei dati: \(error.localizedDescription)"
-        case .networkError:
+        case .networkError(let error):
+            if let urlError = error as? URLError {
+                switch urlError.code {
+                case .notConnectedToInternet:
+                    return "Nessuna connessione o accesso rete locale negato. Verifica Wi-Fi e permessi rete locale."
+                case .cannotConnectToHost:
+                    return "Impossibile raggiungere il server. Verifica IP, porta 8080 e server avviato."
+                case .timedOut:
+                    return "Timeout di connessione. Il server potrebbe non rispondere."
+                case .appTransportSecurityRequiresSecureConnection:
+                    return "Connessione bloccata da sicurezza iOS (ATS)."
+                default:
+                    return "Errore di connessione (\(urlError.code.rawValue)). Verifica la tua rete."
+                }
+            }
             return "Errore di connessione. Verifica la tua rete."
         }
     }
@@ -48,14 +62,27 @@ final class VaporAPIService: ObservableObject {
     
     @Published var sessionExpired: Bool = false
     
-    private init(baseURL: String = "http://localhost:8080") {
-        self.baseURL = baseURL
+    private init(baseURL: String = AppConfig.apiBaseURL) {
+        self.baseURL = Self.resolveBaseURL(baseURL)
         self.authToken = KeychainManager.shared.getToken()
         
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 60
         configuration.timeoutIntervalForResource = 120
         self.urlSession = URLSession(configuration: configuration)
+    }
+    
+    private static func resolveBaseURL(_ configuredURL: String) -> String {
+#if targetEnvironment(simulator)
+        return configuredURL
+#else
+        // On a physical device localhost points to the phone itself.
+        var resolved = configuredURL
+        resolved = resolved.replacingOccurrences(of: "http://localhost:8080", with: "http://172.20.10.4:8080")
+        resolved = resolved.replacingOccurrences(of: "http://127.0.0.1:8080", with: "http://172.20.10.4:8080")
+        resolved = resolved.replacingOccurrences(of: "http://[::1]:8080", with: "http://172.20.10.4:8080")
+        return resolved
+#endif
     }
     
     var isAuthenticated: Bool {

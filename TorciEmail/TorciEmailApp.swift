@@ -18,6 +18,7 @@ struct TorciEmailApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(authViewModel)
+                .preferredColorScheme(.light)
         }
     }
 }

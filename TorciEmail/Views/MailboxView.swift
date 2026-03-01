@@ -65,6 +65,7 @@ struct MailboxView: View {
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 secondi
                     }                }
                 .toolbar { toolbar }
+                .navigationBarTitleDisplayMode(.inline)
                 .searchable(
                     text: $mailVm.searchText,
                     isPresented: $mailVm.isSearchPresented,
@@ -93,6 +94,8 @@ struct MailboxView: View {
                 Text("EviMail")
                     .foregroundColor(.black)
                     .font(.system(size: 40, weight: .semibold))
+                    .opacity(mailVm.isScrolled ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: mailVm.isScrolled)
 
                 Text(updateText)
                     .foregroundColor(.black.opacity(0.5))
@@ -204,10 +207,11 @@ struct MailboxView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button { } label: {
-                Text("select")
-                    .frame(width: 100, height: 48)
+        ToolbarItem(placement: .principal) {
+            if mailVm.isScrolled {
+                Text("EviMail")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
             }
         }
 

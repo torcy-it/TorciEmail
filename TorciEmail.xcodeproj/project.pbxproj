@@ -331,6 +331,10 @@
 				DEVELOPMENT_TEAM = 7S2566L2BH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_API_BASE_URL = "http://172.20.10.4:8080";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = YES;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Usiamo Face ID per sbloccare in sicurezza il tuo account TorciEmail.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TorciEmail usa la rete locale per collegarsi al server di sviluppo sul tuo Mac.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -363,6 +367,10 @@
 				DEVELOPMENT_TEAM = 7S2566L2BH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_API_BASE_URL = "https://api.torciemail.com";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Usiamo Face ID per sbloccare in sicurezza il tuo account TorciEmail.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TorciEmail usa la rete locale per collegarsi al server quando necessario.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

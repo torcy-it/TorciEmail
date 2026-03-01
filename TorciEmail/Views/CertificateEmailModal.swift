@@ -14,6 +14,8 @@ struct CertificateEmailModal: View {
     @EnvironmentObject var mailVm: MailboxViewModel
     @State private var previewURL: URL?
     @State private var downloadError: String?
+    @State private var shareItems: [URL] = []
+    @State private var showShareSheet = false
     
     /// Mostra timeline eventi certificati e azioni download/anteprima.
     var body: some View {
@@ -77,13 +79,17 @@ struct CertificateEmailModal: View {
                     Menu {
                         Button {
                             Task {
-                                await downloadAllAffidavits()
+                                await exportAllAffidavits()
                             }
                         } label: {
                             Label("Export All Affidavits", systemImage: "square.and.arrow.up")
                         }
                         
-                        Button { } label: {
+                        Button {
+                            Task {
+                                await downloadAllAffidavits()
+                            }
+                        } label: {
                             Label("Download All Affidavits", systemImage: "arrow.down.doc")
                         }
                     } label: {
@@ -98,12 +104,41 @@ struct CertificateEmailModal: View {
             .sheet(item: previewItemBinding) { item in
                 FilePreviewSheet(url: item.url)
             }
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(items: shareItems)
+            }
             .alert("Error", isPresented: .constant(downloadError != nil)) {
                 Button("OK") { downloadError = nil }
             } message: {
                 Text(downloadError ?? "")
             }
         }
+    }
+    
+    /// Esporta tutti i certificati aprendo la share sheet iOS.
+    private func exportAllAffidavits() async {
+        var exportedURLs: [URL] = []
+        
+        for affidavit in email.affidavits {
+            do {
+                let url = try await mailVm.downloadAffidavit(affidavit)
+                exportedURLs.append(url)
+            } catch let error as RepositoryError {
+                downloadError = error.errorDescription
+                return
+            } catch {
+                downloadError = "Errore durante l'export degli affidavit"
+                return
+            }
+        }
+        
+        guard !exportedURLs.isEmpty else {
+            downloadError = "Nessun affidavit disponibile per l'export"
+            return
+        }
+        
+        shareItems = exportedURLs
+        showShareSheet = true
     }
     
     /// Scarica in locale tutti i certificati associati alla email.
@@ -118,6 +153,19 @@ struct CertificateEmailModal: View {
                 downloadError = "Errore durante il download dell'affidavit"
                 return
             }
+        }
+    }
+    
+    /// Esporta un singolo affidavit tramite share sheet iOS.
+    private func exportAffidavit(_ affidavit: Affidavit) async {
+        do {
+            let url = try await mailVm.downloadAffidavit(affidavit)
+            shareItems = [url]
+            showShareSheet = true
+        } catch let error as RepositoryError {
+            downloadError = error.errorDescription
+        } catch {
+            downloadError = "Errore durante l'export dell'affidavit"
         }
     }
     
@@ -262,6 +310,9 @@ struct CertificateEmailModal: View {
                     event: event,
                     isFirst: index == 0,
                     isLast: index == sortedEvents.count - 1,
+                    onExportAffidavit: { affidavit in
+                        Task { await exportAffidavit(affidavit) }
+                    },
                     onDownloadAffidavit: { affidavit in
                         Task { await downloadAndPreviewAffidavit(affidavit) }
                     }
@@ -304,6 +355,7 @@ struct EventRow: View {
     let event: EmailEvent
     let isFirst: Bool
     let isLast: Bool
+    let onExportAffidavit: ((Affidavit) -> Void)?
     let onDownloadAffidavit: ((Affidavit) -> Void)?
     
     @State private var isExpanded = false
@@ -355,20 +407,17 @@ struct EventRow: View {
     // MARK: - Event Card
     
     private var eventCard: some View {
-        Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                isExpanded.toggle()
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                // Contenuto principale
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    isExpanded.toggle()
+                }
+            } label: {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Timestamp
                     Text(event.timestampReadable)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     
-                    // Title and chevron
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(eventTitle)
@@ -397,110 +446,107 @@ struct EventRow: View {
                     }
                 }
                 .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            if isExpanded {
+                Divider()
+                    .padding(.horizontal, 16)
                 
-                // Expanded details
-                if isExpanded {
-                    Divider()
-                        .padding(.horizontal, 16)
-                    
-                    VStack(alignment: .leading, spacing: 14) {
-                        // Event type
-                        HStack(alignment: .top) {
-                            Text("Event Type")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Text(eventTypeDetail)
-                                .font(
-                                    .system(size: 13, weight: .medium))
-                                .foregroundColor(.primary)
-                                .multilineTextAlignment(.trailing)
-                        }
-                
-                        
-                        // Affidavit ID
-                        HStack(alignment: .top) {
-                            Text("Affidavit ID")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Text(event.id.uuidString)
-                                .font(
-                                    .system(size: 12, weight: .medium))
-                                .foregroundColor(.primary)
-                                .multilineTextAlignment(.trailing)
-                        }
-    
-
-                        
-                        // Additional info
-                        if let additionalInfo = additionalEventInfo {
-                            HStack(alignment: .top) {
-                                Text("Details")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Text(additionalInfo)
-                                    .font(
-                                        .system(size: 13, weight: .medium))
-                                    .foregroundColor(.primary)
-                                    .multilineTextAlignment(.trailing)
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .padding(.top, 4)
-                    
-                    // Actions
-                    Divider()
-                        .padding(.horizontal, 16)
-                    
-                    HStack(spacing: 16) {
-                        Button { } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 14))
-                                Text("Export")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                            .foregroundColor(.blue)
-                        }
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top) {
+                        Text("Event Type")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
                         
                         Spacer()
                         
-                        Button {
-                            guard let affidavit = event.affidavit else { return }
-                            onDownloadAffidavit?(affidavit)
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.doc")
-                                    .font(.system(size: 14))
-                                Text("Download")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                            .foregroundColor(.blue)
+                        Text(eventTypeDetail)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    
+                    HStack(alignment: .top) {
+                        Text("Affidavit ID")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(event.id.uuidString)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    
+                    if let additionalInfo = additionalEventInfo {
+                        HStack(alignment: .top) {
+                            Text("Details")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Text(additionalInfo)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.trailing)
                         }
                     }
-                    .padding(16)
                 }
+                .padding(16)
+                .padding(.top, 4)
+                
+                Divider()
+                    .padding(.horizontal, 16)
+                
+                HStack(spacing: 16) {
+                    Button {
+                        guard let affidavit = event.affidavit else { return }
+                        onExportAffidavit?(affidavit)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 14))
+                            Text("Share")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(event.affidavit == nil)
+                    
+                    Spacer()
+                    
+                    Button {
+                        guard let affidavit = event.affidavit else { return }
+                        onDownloadAffidavit?(affidavit)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 14))
+                            Text("View")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(16)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.secondarySystemBackground))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
+        )
     }
     
     private var eventTitle: String {
