@@ -1,4 +1,4 @@
-# TorciEmail iOS
+# CertfiedEmail iOS
 
 Client iOS SwiftUI per la gestione di email certificate (EviMail), con architettura MVVM, repository pattern e integrazione backend Vapor.
 
@@ -95,7 +95,7 @@ Client iOS SwiftUI per la gestione di email certificate (EviMail), con architett
 - persistenza e integrazione eCertia
 - emissione payload strutturati (DTO API)
 
-### Client iOS (TorciEmail)
+### Client iOS (CertfiedEmail)
 - esperienza utente e stato locale
 - validazioni di input pre-submit
 - mapping DTO -> dominio -> presentazione
@@ -103,10 +103,10 @@ Client iOS SwiftUI per la gestione di email certificate (EviMail), con architett
 
 ## Struttura cartelle (sintesi)
 
-- `TorciEmail/Views`: UI SwiftUI
-- `TorciEmail/ViewModels`: logica di presentazione
-- `TorciEmail/Domain`: modelli e contratti applicativi
-- `TorciEmail/Data`: networking, repository, DTO, mapper, security
+- `CertfiedEmail/Views`: UI SwiftUI
+- `CertfiedEmail/ViewModels`: logica di presentazione
+- `CertfiedEmail/Domain`: modelli e contratti applicativi
+- `CertfiedEmail/Data`: networking, repository, DTO, mapper, security
 
 ## Configurazione networking (sviluppo iPhone reale)
 
