@@ -1,4 +1,4 @@
-# CertfiedEmail iOS
+# TorciEmail iOS
 
 Client iOS SwiftUI per la gestione di email certificate (EviMail), con architettura MVVM, repository pattern e integrazione backend Vapor.
 
@@ -76,17 +76,6 @@ Client iOS SwiftUI per la gestione di email certificate (EviMail), con architett
   - monitoraggio periodico in `AuthViewModel`.
   - gestione `401` centralizzata in `VaporAPIService` con notifica sessione scaduta.
 
-### Hardening login e sicurezza UX (aggiornato)
-
-- supporto biometria post-primo-login (`Face ID` / `Touch ID`) con `LocalAuthentication`.
-- prompt di attivazione biometria dopo login valido.
-- accesso biometrico su sessione locale gia presente (fallback manuale con password).
-- campo password con toggle mostra/nascondi.
-- validazioni login piu robuste:
-  - email normalizzata (`trim + lowercase`) e validata con regex.
-  - limiti lunghezza email/password.
-  - lock temporaneo dopo tentativi ripetuti falliti (cooldown con countdown UI).
-
 ## Confini server-client
 
 ### Server (Vapor)
@@ -95,7 +84,7 @@ Client iOS SwiftUI per la gestione di email certificate (EviMail), con architett
 - persistenza e integrazione eCertia
 - emissione payload strutturati (DTO API)
 
-### Client iOS (CertfiedEmail)
+### Client iOS (TorciEmail)
 - esperienza utente e stato locale
 - validazioni di input pre-submit
 - mapping DTO -> dominio -> presentazione
@@ -103,31 +92,10 @@ Client iOS SwiftUI per la gestione di email certificate (EviMail), con architett
 
 ## Struttura cartelle (sintesi)
 
-- `CertfiedEmail/Views`: UI SwiftUI
-- `CertfiedEmail/ViewModels`: logica di presentazione
-- `CertfiedEmail/Domain`: modelli e contratti applicativi
-- `CertfiedEmail/Data`: networking, repository, DTO, mapper, security
-
-## Configurazione networking (sviluppo iPhone reale)
-
-- il `baseURL` API e letto da `Info.plist` tramite `AppConfig.apiBaseURL` (`API_BASE_URL`).
-- profilo `Debug` configurato per endpoint locale HTTP su rete LAN.
-- profilo `Release` predisposto per endpoint HTTPS produzione.
-- ATS:
-  - in `Debug` e consentito HTTP locale (`NSAppTransportSecurity`).
-  - in `Release` resta bloccato traffico non HTTPS.
-- aggiunta `NSLocalNetworkUsageDescription` per accesso rete locale su iPhone.
-- fallback anti-loopback su device reale: se `localhost/127.0.0.1` viene risolto all'IP LAN di sviluppo.
-
-## UI/UX aggiornamenti recenti
-
-- app forzata in light mode (`preferredColorScheme(.light)`).
-- `MailboxView`:
-  - il titolo grande `EviMail` collassa in titolo toolbar durante lo scroll.
-- `CertificateEmailModal`:
-  - azione `Export` collegata a share sheet iOS nativa (`UIActivityViewController`).
-  - supporto `Export All Affidavits`.
-  - `Download All Affidavits` operativo.
+- `TorciEmail/Views`: UI SwiftUI
+- `TorciEmail/ViewModels`: logica di presentazione
+- `TorciEmail/Domain`: modelli e contratti applicativi
+- `TorciEmail/Data`: networking, repository, DTO, mapper, security
 
 ## Convenzioni manutenzione
 
