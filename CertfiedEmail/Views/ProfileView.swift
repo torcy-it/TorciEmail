@@ -64,7 +64,7 @@ struct ProfileView: View {
             if showLogoutConfirmation {
                 CustomAlert(
                     title: "Logout",
-                    message: "Sei sicuro di voler uscire?",
+                    message: "Are you sure you want to log out?",
                     primaryButton: AlertButton(
                         title: "Logout",
                         style: .destructive,
@@ -76,7 +76,7 @@ struct ProfileView: View {
                         }
                     ),
                     secondaryButton: AlertButton(
-                        title: "Annulla",
+                        title: "Cancel",
                         style: .cancel,
                         action: {
                             showLogoutConfirmation = false

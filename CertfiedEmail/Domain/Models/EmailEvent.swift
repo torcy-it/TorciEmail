@@ -131,31 +131,31 @@ enum EventType: Hashable {
     func description(for state: EventState) -> String {
         switch (self, state) {
         case (.preparation, .preparation(.pending)):
-            return "In attesa di invio"
+            return "Waiting to be sent"
         case (.preparation, .preparation(.ready)):
-            return "Pronto per l'invio"
+            return "Ready to send"
         case (.sending, .sending(.sent)):
-            return "Inviato"
+            return "Sent"
         case (.sending, .sending(.dispatched)):
-            return "Spedito al server destinatario"
+            return "Dispatched to recipient server"
         case (.sending, .sending(.delivered)):
-            return "Consegnato"
+            return "Delivered"
         case (.sending, .sending(.failed)):
-            return "Invio fallito"
+            return "Sending failed"
         case (.reading, .reading(.waiting)):
-            return "In attesa di apertura"
+            return "Waiting to be opened"
         case (.reading, .reading(.opened)):
-            return "Aperto"
+            return "Opened"
         case (.decision, .decision(.contentWaiting)):
-            return "In attesa di risposta"
+            return "Waiting for response"
         case (.decision, .decision(.contentAccepted)):
-            return "Contenuto accettato"
+            return "Content accepted"
         case (.decision, .decision(.contentRejected)):
-            return "Contenuto rifiutato"
+            return "Content rejected"
         case (.closing, .closing(.closed)):
-            return "Scaduto"
+            return "Expired"
         default:
-            return "Stato sconosciuto"
+            return "Unknown status"
         }
     }
 }

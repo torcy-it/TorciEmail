@@ -24,17 +24,17 @@ struct SessionExpired: View {
                     .font(.system(size: 60))
                     .foregroundColor(.orange)
                 
-                Text("Sessione Scaduta")
+                Text("Session Expired")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text("La tua sessione è scaduta.\nEffettua nuovamente il login.")
+                Text("Your session has expired.\nPlease log in again.")
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                 
                 Button(action: onDismiss) {
-                    Text("Vai al Login")
+                    Text("Go to Login")
                         .font(.system(size: 17, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding()

@@ -39,9 +39,9 @@ enum SendingStatus: Hashable {
     
     var description: String {
         switch self {
-        case .waiting: return "In attesa di invio"
-        case .sent: return "Inviato"
-        case .failed: return "Invio fallito"
+        case .waiting: return "Waiting to be sent"
+        case .sent: return "Sent"
+        case .failed: return "Sending failed"
         }
     }
 }
@@ -67,8 +67,8 @@ enum ReadingStatus: Hashable {
     
     var description: String {
         switch self {
-        case .waiting: return "In attesa di apertura"
-        case .opened: return "Aperto"
+        case .waiting: return "Waiting to be opened"
+        case .opened: return "Opened"
         }
     }
 }
@@ -97,9 +97,9 @@ enum ContentStatus: Hashable {
     
     var description: String {
         switch self {
-        case .waiting: return "In attesa di risposta"
-        case .accepted: return "Contenuto accettato"
-        case .rejected: return "Contenuto rifiutato"
+        case .waiting: return "Waiting for response"
+        case .accepted: return "Content accepted"
+        case .rejected: return "Content rejected"
         }
     }
 }

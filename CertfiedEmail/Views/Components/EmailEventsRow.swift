@@ -52,7 +52,7 @@ struct EventIconView: View {
 
 #Preview {
     VStack(spacing: 20) {
-        Text("Idle - tutto in waiting")
+        Text("Idle - all waiting")
         EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .waiting,
             readingStatus: .waiting,
@@ -61,7 +61,7 @@ struct EventIconView: View {
         
         Divider()
         
-        Text("Email inviata")
+        Text("Email sent")
         EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .waiting,
@@ -70,7 +70,7 @@ struct EventIconView: View {
         
         Divider()
         
-        Text("Email vista")
+        Text("Email opened")
         EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .opened,
@@ -79,7 +79,7 @@ struct EventIconView: View {
         
         Divider()
         
-        Text("Contenuto accettato")
+        Text("Content accepted")
         EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .sent,
             readingStatus: .opened,
@@ -88,7 +88,7 @@ struct EventIconView: View {
         
         Divider()
         
-        Text("Invio fallito")
+        Text("Sending failed")
         EmailEventsRow(eventStatus: EmailEventStatus(
             sendingStatus: .failed,
             readingStatus: .waiting,

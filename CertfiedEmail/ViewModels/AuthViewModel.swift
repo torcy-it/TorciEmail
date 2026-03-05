@@ -144,7 +144,7 @@ final class AuthViewModel: ObservableObject {
                 let email = try await repository.getCurrentUser()
                 self.userEmail = email
             } catch {
-                errorMessage = "Impossibile recuperare i dati utente"
+                errorMessage = "Unable to retrieve user data"
             }
         }
     }
@@ -153,7 +153,7 @@ final class AuthViewModel: ObservableObject {
     
     func login() async {
         if isLoginLocked {
-            errorMessage = "Troppi tentativi. Riprova tra \(remainingLockoutSeconds)s."
+            errorMessage = "Too many attempts. Try again in \(remainingLockoutSeconds)s."
             return
         }
         
@@ -184,7 +184,7 @@ final class AuthViewModel: ObservableObject {
                 errorMessage = error.errorDescription
             } catch {
                 registerFailedLoginAttempt()
-                errorMessage = "Errore sconosciuto"
+                errorMessage = "Unknown error"
             }
             
             isLoading = false
@@ -197,17 +197,17 @@ final class AuthViewModel: ObservableObject {
     /// Sblocca la sessione esistente richiedendo Face ID / Touch ID.
     func unlockWithBiometrics() async {
         guard canUseBiometrics else {
-            errorMessage = "Biometria non disponibile su questo dispositivo."
+            errorMessage = "Biometrics are not available on this device."
             return
         }
         
         guard biometricsEnabled else {
-            errorMessage = "Attiva prima la biometria dopo il login."
+            errorMessage = "Enable biometrics after logging in first."
             return
         }
         
         guard hasStoredSession else {
-            errorMessage = "Effettua prima un login manuale."
+            errorMessage = "Please log in manually first."
             return
         }
         
@@ -216,10 +216,10 @@ final class AuthViewModel: ObservableObject {
         
         do {
             let unlocked = try await evaluateBiometricPolicy(
-                reason: "Sblocca CertfiedEmail in modo sicuro"
+                reason: "Securely unlock CertfiedEmail"
             )
             guard unlocked else {
-                errorMessage = "Autenticazione biometrica annullata."
+                errorMessage = "Biometric authentication was canceled."
                 return
             }
             
@@ -228,28 +228,28 @@ final class AuthViewModel: ObservableObject {
             startTokenExpirationMonitoring()
             await refreshUserInfo()
         } catch {
-            errorMessage = "Impossibile verificare la biometria."
+            errorMessage = "Unable to verify biometrics."
         }
     }
     
     /// Richiede consenso utente e abilita biometria locale.
     func enableBiometrics() async {
         guard canUseBiometrics else {
-            errorMessage = "Biometria non disponibile su questo dispositivo."
+            errorMessage = "Biometrics are not available on this device."
             showEnableBiometricsPrompt = false
             return
         }
         
         do {
             let confirmed = try await evaluateBiometricPolicy(
-                reason: "Abilita Face ID/Touch ID per i prossimi accessi"
+                reason: "Enable Face ID/Touch ID for future sign-ins"
             )
             if confirmed {
                 biometricsEnabled = true
                 UserDefaults.standard.set(true, forKey: biometricsEnabledKey)
             }
         } catch {
-            errorMessage = "Non e stato possibile attivare la biometria."
+            errorMessage = "Unable to enable biometrics."
         }
         
         showEnableBiometricsPrompt = false
@@ -313,21 +313,21 @@ final class AuthViewModel: ObservableObject {
     
     private func validateLoginInput(email: String, password: String) -> String? {
         guard !email.isEmpty, !password.isEmpty else {
-            return "Inserisci email e password."
+            return "Enter email and password."
         }
         
         guard email.count <= 254 else {
-            return "Email troppo lunga."
+            return "Email is too long."
         }
         
         let pattern = #"^[A-Z0-9a-z._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,64}$"#
         let predicate = NSPredicate(format: "SELF MATCHES %@", pattern)
         guard predicate.evaluate(with: email) else {
-            return "Inserisci un indirizzo email valido."
+            return "Enter a valid email address."
         }
         
         guard password.count <= 128 else {
-            return "Password troppo lunga."
+            return "Password is too long."
         }
         
         return nil
@@ -343,7 +343,7 @@ final class AuthViewModel: ObservableObject {
     private func registerFailedLoginAttempt() {
         failedLoginAttempts += 1
         
-        guard failedLoginAttempts >= 5 else { return }
+        guard failedLoginAttempts >= 2 else { return }
         lockoutUntil = Date().addingTimeInterval(30)
         failedLoginAttempts = 0
         startLoginLockoutTimer()
@@ -394,18 +394,18 @@ final class AuthViewModel: ObservableObject {
         
         switch context.biometryType {
         case .faceID:
-            biometricButtonTitle = "Accedi con Face ID"
+            biometricButtonTitle = "Sign in with Face ID"
         case .touchID:
-            biometricButtonTitle = "Accedi con Touch ID"
+            biometricButtonTitle = "Sign in with Touch ID"
         default:
-            biometricButtonTitle = "Accedi con biometria"
+            biometricButtonTitle = "Sign in with biometrics"
         }
     }
     
     private func evaluateBiometricPolicy(reason: String) async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
             let context = LAContext()
-            context.localizedCancelTitle = "Usa password"
+            context.localizedCancelTitle = "Use password"
             var error: NSError?
             
             guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {

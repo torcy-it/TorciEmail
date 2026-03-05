@@ -132,7 +132,7 @@ struct MailboxView: View {
     
     private var updateText: String {
         if mailVm.isLoading {
-            return "Caricamento..."
+            return "Loading..."
         }
         return "Update Just Now"
     }
@@ -144,7 +144,7 @@ struct MailboxView: View {
             ProgressView()
                 .scaleEffect(1.2)
             
-            Text("Caricamento email...")
+            Text("Loading emails...")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray)
         }
@@ -160,7 +160,7 @@ struct MailboxView: View {
                 .font(.system(size: 50))
                 .foregroundColor(.orange)
             
-            Text("Errore nel caricamento email")
+            Text("Error loading emails")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.primary)
             
@@ -175,7 +175,7 @@ struct MailboxView: View {
                     await mailVm.refreshEmails()
                 }
             } label: {
-                Text("Riprova")
+                Text("Retry")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
@@ -196,7 +196,7 @@ struct MailboxView: View {
                 .font(.system(size: 50))
                 .foregroundColor(.gray)
 
-            Text("Nessuna email trovata")
+            Text("No emails found")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.gray)
         }

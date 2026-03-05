@@ -127,13 +127,13 @@ struct CertificateEmailModal: View {
                 downloadError = error.errorDescription
                 return
             } catch {
-                downloadError = "Errore durante l'export degli affidavit"
+                downloadError = "Error while exporting affidavits"
                 return
             }
         }
         
         guard !exportedURLs.isEmpty else {
-            downloadError = "Nessun affidavit disponibile per l'export"
+            downloadError = "No affidavit available for export"
             return
         }
         
@@ -150,7 +150,7 @@ struct CertificateEmailModal: View {
                 downloadError = error.errorDescription
                 return
             } catch {
-                downloadError = "Errore durante il download dell'affidavit"
+                downloadError = "Error while downloading affidavit"
                 return
             }
         }
@@ -165,7 +165,7 @@ struct CertificateEmailModal: View {
         } catch let error as RepositoryError {
             downloadError = error.errorDescription
         } catch {
-            downloadError = "Errore durante l'export dell'affidavit"
+            downloadError = "Error while exporting affidavit"
         }
     }
     
@@ -177,7 +177,7 @@ struct CertificateEmailModal: View {
         } catch let error as RepositoryError {
             downloadError = error.errorDescription
         } catch {
-            downloadError = "Errore durante il download dell'affidavit"
+            downloadError = "Error while downloading affidavit"
         }
     }
     

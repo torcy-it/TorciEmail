@@ -121,7 +121,7 @@ struct EmailView: View {
         } catch let error as RepositoryError {
             detailsError = error.errorDescription
         } catch {
-            detailsError = "Errore nel caricamento dei dettagli"
+            detailsError = "Error loading details"
         }
         
         isLoadingDetails = false
@@ -332,7 +332,7 @@ struct EmailView: View {
         } catch let error as RepositoryError {
             attachmentDownloadError = error.errorDescription
         } catch {
-            attachmentDownloadError = "Errore durante il download dell'allegato"
+            attachmentDownloadError = "Error downloading attachment"
         }
     }
     

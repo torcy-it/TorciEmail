@@ -57,21 +57,21 @@ enum RepositoryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unauthorized:
-            return "Sessione scaduta. Effettua nuovamente il login."
+            return "Error please log in again."
         case .emailNotFound:
-            return "Email non trovata."
+            return "Email not found."
         case .invalidData:
-            return "Dati non validi."
+            return "Invalid data."
         case .networkError:
-            return "Errore di connessione. Verifica la tua rete."
+            return "Connection error. Check your network."
         case .serverError(let message):
             return message
         case .fileTooLarge:
-            return "Il file selezionato è troppo grande (max 10 MB)."
+            return "The selected file is too large (max 10 MB)."
         case .unsupportedFileType:
-            return "Formato file non supportato. Usa PDF, DOC, DOCX, JPG, PNG o ZIP."
+            return "Unsupported file format. Use PDF, DOC, DOCX, JPG, PNG, or ZIP."
         case .unknown:
-            return "Errore sconosciuto."
+            return "Unknown error."
         }
     }
 }

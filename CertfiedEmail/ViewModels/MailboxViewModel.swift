@@ -101,7 +101,7 @@ final class MailboxViewModel: ObservableObject {
         } catch let error as RepositoryError {
             errorMessage = error.errorDescription
         } catch {
-            errorMessage = "Errore nel caricamento delle email"
+            errorMessage = "Error loading emails"
         }
         
         isLoading = false

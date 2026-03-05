@@ -96,7 +96,7 @@ final class AuthRepositoryImpl: AuthRepository {
         case .unauthorized:
             return .unauthorized
         case .httpError(_, let message):
-            return .serverError(message: message ?? "Errore del server")
+            return .serverError(message: message ?? "Server error")
         case .networkError:
             return .networkError
         case .decodingError:

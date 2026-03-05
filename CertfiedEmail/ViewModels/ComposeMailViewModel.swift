@@ -160,7 +160,7 @@ final class ComposeMailViewModel: ObservableObject {
     /// - Returns: `true` se l'invio è andato a buon fine.
     func sendEmail() async -> Bool {
         guard let draft = createEmailDraft() else {
-            errorMessage = "Errore nella creazione della bozza"
+            errorMessage = "Error creating draft"
             return false
         }
 
@@ -175,7 +175,7 @@ final class ComposeMailViewModel: ObservableObject {
             errorMessage = error.errorDescription
             return false
         } catch {
-            errorMessage = "Errore sconosciuto durante l'invio"
+            errorMessage = "Unknown error while sending"
             return false
         }
     }
@@ -185,7 +185,7 @@ final class ComposeMailViewModel: ObservableObject {
     /// - Returns: `true` se l'invio è completato correttamente.
     func submitEmailWithAttachment() async -> Bool {
         guard let draft = createEmailDraft() else {
-            errorMessage = "Errore nella creazione della bozza"
+            errorMessage = "Error creating draft"
             return false
         }
         
@@ -220,7 +220,7 @@ final class ComposeMailViewModel: ObservableObject {
             }
             return false
         } catch {
-            errorMessage = "Errore sconosciuto durante l'invio"
+            errorMessage = "Unknown error while sending"
             return false
         }
     }
@@ -250,17 +250,17 @@ final class ComposeMailViewModel: ObservableObject {
     /// - Returns: Bozza pronta per il repository, oppure `nil` in caso di validazione fallita.
     func createEmailDraft() -> EmailDraft? {
         guard !toRecipients.isEmpty else {
-            errorMessage = "Aggiungi almeno un destinatario"
+            errorMessage = "Add at least one recipient"
             return nil
         }
 
         guard !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Inserisci un oggetto"
+            errorMessage = "Enter a subject"
             return nil
         }
 
         guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Inserisci un corpo del messaggio"
+            errorMessage = "Enter a message body"
             return nil
         }
 

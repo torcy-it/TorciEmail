@@ -20,34 +20,34 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "URL non valido"
+            return "Invalid URL"
         case .unauthorized:
-            return "Sessione scaduta. Effettua nuovamente il login."
+            return "Error please log in again."
         case .invalidResponse:
-            return "Risposta del server non valida"
+            return "Invalid server response"
         case .httpError(let code, let message):
             if let message = message {
-                return "Errore \(code): \(message)"
+                return "Error \(code): \(message)"
             }
-            return "Errore HTTP \(code)"
+            return "HTTP error \(code)"
         case .decodingError(let error):
-            return "Errore nella decodifica dei dati: \(error.localizedDescription)"
+            return "Data decoding error: \(error.localizedDescription)"
         case .networkError(let error):
             if let urlError = error as? URLError {
                 switch urlError.code {
                 case .notConnectedToInternet:
-                    return "Nessuna connessione o accesso rete locale negato. Verifica Wi-Fi e permessi rete locale."
+                    return "No connection or local network access denied. Check Wi-Fi and local network permissions."
                 case .cannotConnectToHost:
-                    return "Impossibile raggiungere il server. Verifica IP, porta 8080 e server avviato."
+                    return "Unable to reach the server. Check IP, port 8080, and that the server is running."
                 case .timedOut:
-                    return "Timeout di connessione. Il server potrebbe non rispondere."
+                    return "Connection timeout. The server may not be responding."
                 case .appTransportSecurityRequiresSecureConnection:
-                    return "Connessione bloccata da sicurezza iOS (ATS)."
+                    return "Connection blocked by iOS security policy (ATS)."
                 default:
-                    return "Errore di connessione (\(urlError.code.rawValue)). Verifica la tua rete."
+                    return "Connection error (\(urlError.code.rawValue)). Check your network."
                 }
             }
-            return "Errore di connessione. Verifica la tua rete."
+            return "Connection error. Check your network."
         }
     }
 }
