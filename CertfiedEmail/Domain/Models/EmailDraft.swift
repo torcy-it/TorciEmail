@@ -5,14 +5,14 @@ struct EmailDraft {
     let subject: String
     let body: String
     let issuerName: String
-    let recipientName: String? = nil
+    var recipientName: String? = nil
     let recipientEmail: String
     
     /// Campi opzionali della bozza.
-    let replyTo: String? = nil
-    let carbonCopy: [CarbonCopyDraft]? = nil
-    let options: EmailOptions? = nil
-    let attachments: [AttachmentDraft]? = nil
+    var replyTo: String? = nil
+    var carbonCopy: [CarbonCopyDraft]? = nil
+    var options: EmailOptions? = nil
+    var attachments: [AttachmentDraft]? = nil
 }
 
 struct CarbonCopyDraft {
@@ -21,17 +21,17 @@ struct CarbonCopyDraft {
 }
 
 struct EmailOptions {
-    let certificationLevel: String? = "Advanced"
-    let language: String? = "en"
-    let affidavitLanguage: String? = "en"
-    let appearance: String? = "Certified"
-    let agreementPossibilities: String? = "Accept"
-    let allowReasons: Bool = false
-    let acceptReasons: [String] = []
-    let rejectReasons: [String] = []
-    let acceptReasonsRequired: Bool = false
-    let rejectReasonsRequired: Bool = false
-    let affidavitKinds: [String] = [
+    var certificationLevel: String? = "Advanced"
+    var language: String? = "en"
+    var affidavitLanguage: String? = "en"
+    var appearance: String? = "Certified"
+    var agreementPossibilities: String? = "Accept"
+    var allowReasons: Bool = false
+    var acceptReasons: [String] = []
+    var rejectReasons: [String] = []
+    var acceptReasonsRequired: Bool = false
+    var rejectReasonsRequired: Bool = false
+    var affidavitKinds: [String] = [
         "Submitted",
         "SubmittedAdvanced",
         "TransmissionResult",
@@ -47,11 +47,11 @@ struct EmailOptions {
         "Event",
         "Failed"
     ]
-    let timeToLive: Int? = 10080
-    let deliveryMode: String? = "Forward"
-    let commitmentOptions: String? = "AcceptOrReject"
-    let pushNotificationUrl: String? = nil
-    let costCentre: String? = nil
+    var timeToLive: Int? = 10080
+    var deliveryMode: String? = "Forward"
+    var commitmentOptions: String? = "AcceptOrReject"
+    var pushNotificationUrl: String? = nil
+    var costCentre: String? = nil
 }
 
 
