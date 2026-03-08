@@ -30,7 +30,7 @@ final class JSONCaptureMockRepository: EmailRepository {
 
         // Stampa il JSON in console per debug
         if let jsonString = String(data: jsonData, encoding: .utf8) {
-            print("📤 JSON inviato:\n\(jsonString)")
+            print("JSON inviato:\n\(jsonString)")
         }
 
         if shouldSucceed { return "fake-evi-id-123" }
@@ -38,7 +38,16 @@ final class JSONCaptureMockRepository: EmailRepository {
     }
 
     func getAllEmails() async throws -> [EmailItem] { [] }
-    func getEmail(id: String) async throws -> EmailItem { throw RepositoryError.emailNotFound }
+    func getEmail(id _: String) async throws -> EmailItem { throw RepositoryError.emailNotFound }
+    
+    func sendEmailWithAttachment(
+        _ draft: EmailDraft,
+        fileURL _: URL,
+        fileName _: String?
+    ) async throws -> String {
+        // For JSON capture tests we reuse the same payload mapping path.
+        try await sendEmail(draft)
+    }
 }
 
 // MARK: - Estensione per esporre buildSubmitRequest nei test
