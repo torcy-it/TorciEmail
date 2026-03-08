@@ -23,18 +23,21 @@ struct EmailAttachment: Identifiable, Hashable {
         
         
         static func from(mimeType: String) -> Kind {
-            switch mimeType.lowercased() {
-            case let type where type.contains("pdf"):
+            let type = mimeType.lowercased()
+            
+            if type.contains("pdf") {
                 return .pdf
-            case let type where type.contains("image"):
-                return .image
-            case let type where type.contains("word"), let type where type.contains("document"):
-                return .doc
-            case let type where type.contains("zip"), let type where type.contains("compressed"):
-                return .zip
-            default:
-                return .other
             }
+            if type.contains("image") {
+                return .image
+            }
+            if type.contains("word") || type.contains("document") {
+                return .doc
+            }
+            if type.contains("zip") || type.contains("compressed") {
+                return .zip
+            }
+            return .other
         }
     }
     
