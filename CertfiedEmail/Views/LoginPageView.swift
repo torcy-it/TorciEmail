@@ -197,7 +197,9 @@ struct LoginPageView: View {
             )
         }
         .alert("Invalid Server URL", isPresented: $showServerConfigError) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) {
+                showServerConfigError = false
+            }
         } message: {
             Text(serverConfigErrorMessage)
         }
