@@ -63,7 +63,7 @@ final class VaporAPIService: ObservableObject {
     @Published var sessionExpired: Bool = false
     
     private init(baseURL: String = AppConfig.apiBaseURL) {
-        self.baseURL = Self.resolveBaseURL(baseURL)
+        self.baseURL = Self.normalizedBaseURL(baseURL)
         self.authToken = KeychainManager.shared.getToken()
         
         let configuration = URLSessionConfiguration.default
@@ -72,17 +72,11 @@ final class VaporAPIService: ObservableObject {
         self.urlSession = URLSession(configuration: configuration)
     }
     
-    private static func resolveBaseURL(_ configuredURL: String) -> String {
-#if targetEnvironment(simulator)
-        return configuredURL
-#else
-        // On a physical device localhost points to the phone itself.
-        var resolved = configuredURL
-        resolved = resolved.replacingOccurrences(of: "http://localhost:8080", with: "http://172.20.10.4:8080")
-        resolved = resolved.replacingOccurrences(of: "http://127.0.0.1:8080", with: "http://172.20.10.4:8080")
-        resolved = resolved.replacingOccurrences(of: "http://[::1]:8080", with: "http://172.20.10.4:8080")
-        return resolved
-#endif
+    /// Normalizes configured base URL (trim + remove trailing slash).
+    private static func normalizedBaseURL(_ configuredURL: String) -> String {
+        configuredURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "/+$", with: "", options: .regularExpression)
     }
     
     var isAuthenticated: Bool {
