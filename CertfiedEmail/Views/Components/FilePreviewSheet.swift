@@ -39,11 +39,11 @@ struct FilePreviewSheet: UIViewControllerRepresentable {
             self.url = url
         }
         
-        func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
+        func numberOfPreviewItems(in _: QLPreviewController) -> Int {
             1
         }
         
-        func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+        func previewController(_ : QLPreviewController, previewItemAt _: Int) -> QLPreviewItem {
             url as NSURL
         }
     }

@@ -87,7 +87,7 @@ struct CustomAlert: View {
     /// Ritorna il colore coerente con lo stile del pulsante.
     private func buttonColor(for style: AlertButton.Style) -> Color {
         switch style {
-        case .default:
+        case .primary:
             return Color.blue
         case .cancel:
             return Color.gray

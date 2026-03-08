@@ -10,7 +10,7 @@ import Foundation
 /// Configurazione di un bottone all'interno di `CustomAlert`.
 struct AlertButton {
     enum Style {
-        case `default`
+        case primary
         case cancel
         case destructive
     }
