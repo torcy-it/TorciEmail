@@ -5,47 +5,14 @@ struct EmailDraft {
     let subject: String
     let body: String
     let issuerName: String
-    let recipientName: String?
+    let recipientName: String? = nil
     let recipientEmail: String
     
     /// Campi opzionali della bozza.
-    let replyTo: String?
-    let carbonCopy: [CarbonCopyDraft]?
-    let options: EmailOptions?
-    let attachments: [AttachmentDraft]?
-    
-    /// Inizializza una bozza pronta per il mapping verso DTO API.
-    /// - Parameters:
-    ///   - subject: Oggetto email.
-    ///   - body: Corpo testuale/html.
-    ///   - issuerName: Identificativo mittente lato business.
-    ///   - recipientName: Nome destinatario (opzionale).
-    ///   - recipientEmail: Email destinatario principale.
-    ///   - replyTo: Intestazione Reply-To opzionale.
-    ///   - carbonCopy: Destinatari in copia conoscenza.
-    ///   - options: Opzioni di certificazione e workflow.
-    ///   - attachments: Allegati in formato binario.
-    init(
-        subject: String,
-        body: String,
-        issuerName: String,
-        recipientName: String? = nil,
-        recipientEmail: String,
-        replyTo: String? = nil,
-        carbonCopy: [CarbonCopyDraft]? = nil,
-        options: EmailOptions? = nil,
-        attachments: [AttachmentDraft]? = nil
-    ) {
-        self.subject = subject
-        self.body = body
-        self.issuerName = issuerName
-        self.recipientName = recipientName
-        self.recipientEmail = recipientEmail
-        self.replyTo = replyTo
-        self.carbonCopy = carbonCopy
-        self.options = options
-        self.attachments = attachments
-    }
+    let replyTo: String? = nil
+    let carbonCopy: [CarbonCopyDraft]? = nil
+    let options: EmailOptions? = nil
+    let attachments: [AttachmentDraft]? = nil
 }
 
 struct CarbonCopyDraft {
@@ -54,74 +21,37 @@ struct CarbonCopyDraft {
 }
 
 struct EmailOptions {
-    let certificationLevel: String?
-    let language: String?
-    let affidavitLanguage: String?
-    let appearance: String?
-    let agreementPossibilities: String?
-    let allowReasons: Bool
-    let acceptReasons: [String]
-    let rejectReasons: [String]
-    let acceptReasonsRequired: Bool
-    let rejectReasonsRequired: Bool
-    let affidavitKinds: [String]
-    let timeToLive: Int?
-    let deliveryMode: String?
-    let commitmentOptions: String?
-    let pushNotificationUrl: String?
-    let costCentre: String?
-    
-    /// Inizializza le opzioni avanzate di invio certificato.
-    init(
-        certificationLevel: String? = "Advanced",
-        language: String? = "en",
-        affidavitLanguage: String? = "en",
-        appearance: String? = "Certified",
-        agreementPossibilities: String? = "Accept",
-        allowReasons: Bool = false,
-        acceptReasons: [String] = [],
-        rejectReasons: [String] = [],
-        acceptReasonsRequired: Bool = false,
-        rejectReasonsRequired: Bool = false,
-        timeToLive: Int? = 10080,
-        deliveryMode: String? = "Forward",
-        commitmentOptions: String? = "AcceptOrReject",
-        affidavitKinds: [String] = [
-            "Submitted",
-            "SubmittedAdvanced",
-            "TransmissionResult",
-            "DeliveryResult",
-            "Read",
-            "Committed",
-            "CommittedAdvanced",
-            "Closed",
-            "ClosedAdvanced",
-            "Complete",
-            "CompleteAdvanced",
-            "OnDemand",
-            "Event",
-            "Failed"
-        ],
-        pushNotificationUrl: String? = nil,
-        costCentre: String? = nil
-    ) {
-        self.certificationLevel = certificationLevel
-        self.language = language
-        self.affidavitLanguage = affidavitLanguage
-        self.appearance = appearance
-        self.agreementPossibilities = agreementPossibilities
-        self.allowReasons = allowReasons
-        self.acceptReasons = acceptReasons
-        self.rejectReasons = rejectReasons
-        self.acceptReasonsRequired = acceptReasonsRequired
-        self.rejectReasonsRequired = rejectReasonsRequired
-        self.timeToLive = timeToLive
-        self.deliveryMode = deliveryMode
-        self.commitmentOptions = commitmentOptions
-        self.affidavitKinds = affidavitKinds
-        self.pushNotificationUrl = pushNotificationUrl
-        self.costCentre = costCentre
-    }
+    let certificationLevel: String? = "Advanced"
+    let language: String? = "en"
+    let affidavitLanguage: String? = "en"
+    let appearance: String? = "Certified"
+    let agreementPossibilities: String? = "Accept"
+    let allowReasons: Bool = false
+    let acceptReasons: [String] = []
+    let rejectReasons: [String] = []
+    let acceptReasonsRequired: Bool = false
+    let rejectReasonsRequired: Bool = false
+    let affidavitKinds: [String] = [
+        "Submitted",
+        "SubmittedAdvanced",
+        "TransmissionResult",
+        "DeliveryResult",
+        "Read",
+        "Committed",
+        "CommittedAdvanced",
+        "Closed",
+        "ClosedAdvanced",
+        "Complete",
+        "CompleteAdvanced",
+        "OnDemand",
+        "Event",
+        "Failed"
+    ]
+    let timeToLive: Int? = 10080
+    let deliveryMode: String? = "Forward"
+    let commitmentOptions: String? = "AcceptOrReject"
+    let pushNotificationUrl: String? = nil
+    let costCentre: String? = nil
 }
 
 
