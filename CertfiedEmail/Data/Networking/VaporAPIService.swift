@@ -56,14 +56,12 @@ enum APIError: LocalizedError {
 final class VaporAPIService: ObservableObject {
     static let shared = VaporAPIService()
     
-    private let baseURL: String
     private(set) var authToken: String?
     private let urlSession: URLSession
     
     @Published var sessionExpired: Bool = false
     
-    private init(baseURL: String = AppConfig.apiBaseURL) {
-        self.baseURL = Self.normalizedBaseURL(baseURL)
+    private init() {
         self.authToken = KeychainManager.shared.getToken()
         
         let configuration = URLSessionConfiguration.default
@@ -209,6 +207,7 @@ final class VaporAPIService: ObservableObject {
         method: String,
         requiresAuth: Bool
     ) throws -> URLRequest {
+        let baseURL = Self.normalizedBaseURL(AppConfig.apiBaseURL)
         guard let url = URL(string: baseURL + endpoint) else {
             throw APIError.invalidURL
         }
