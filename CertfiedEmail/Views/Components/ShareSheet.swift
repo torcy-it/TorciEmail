@@ -21,5 +21,7 @@ struct ShareSheet: UIViewControllerRepresentable {
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // Intentionally empty: share sheet content is configured at creation time.
+    }
 }

@@ -21,6 +21,9 @@ struct EmailView: View {
     @State private var showCertificatesModal = false
     @State private var attachmentDownloadError: String?
     @State private var previewURL: URL?
+    @State private var showShareSheet = false
+    @State private var shareItems: [URL] = []
+    @State private var showAllAttachments = false
 
     // MARK: - Init
     
@@ -75,17 +78,31 @@ struct EmailView: View {
             ToolbarSpacer(.flexible, placement: .bottomBar)
 
             ToolbarItem(placement: .bottomBar) {
-                Button("Download Content Email", systemImage: "square.and.arrow.down") { }
+                Button("Download Content Email", systemImage: "square.and.arrow.down") {
+                    exportEmailContent()
+                }
             }
         }
         .sheet(isPresented: $showDetailsModal) {
             DetailsEmailModal(showDetailsModal: $showDetailsModal, email: currentEmail)
+                .environmentObject(mailVm)
         }
         .sheet(isPresented: $showCertificatesModal) {
             CertificateEmailModal(showCertificatesModal: $showCertificatesModal, email: currentEmail)
         }
+        .sheet(isPresented: $showAllAttachments) {
+            AttachmentListSheet(attachments: currentEmail.attachments) { attachment in
+                showAllAttachments = false
+                Task {
+                    await handleAttachmentTap(attachment)
+                }
+            }
+        }
         .sheet(item: previewItemBinding) { item in
             FilePreviewSheet(url: item.url)
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: shareItems)
         }
         .task {
        
@@ -238,7 +255,7 @@ struct EmailView: View {
 
                         Spacer()
 
-                        Button("View all") { }
+                        Button("View all") { showAllAttachments = true }
                         .font(.system(size: 14, weight: .semibold))
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
@@ -336,6 +353,34 @@ struct EmailView: View {
         }
     }
     
+    /// Esporta in locale il contenuto testuale dell'email e apre la share sheet.
+    private func exportEmailContent() {
+        let content = """
+        Email ID: \(currentEmail.id)
+        Date: \(currentEmail.date)
+        Subject: \(currentEmail.emailObject)
+        From: \(currentEmail.sender.formatted)
+        To: \(currentEmail.recipient.formatted)
+        Cc: \(currentEmail.carbonCopy.formatted)
+        
+        Body:
+        \(currentEmail.bodyPlainText)
+        """
+        
+        let safeId = currentEmail.id.replacingOccurrences(of: "/", with: "-")
+        let fileName = "email-content-\(safeId).txt"
+        
+        do {
+            let url = try mailVm.exportTextFile(content: content, fileName: fileName)
+            shareItems = [url]
+            showShareSheet = true
+        } catch let error as RepositoryError {
+            attachmentDownloadError = error.errorDescription
+        } catch {
+            attachmentDownloadError = "Error exporting email content"
+        }
+    }
+    
     private var previewItemBinding: Binding<PreviewItem?> {
         Binding<PreviewItem?>(
             get: {
@@ -375,5 +420,38 @@ struct EmailView: View {
 private struct PreviewItem: Identifiable {
     let url: URL
     var id: String { url.absoluteString }
+}
+
+private struct AttachmentListSheet: View {
+    let attachments: [EmailAttachment]
+    let onSelect: (EmailAttachment) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            List(attachments) { attachment in
+                Button {
+                    onSelect(attachment)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(attachment.name)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.primary)
+                        Text(attachment.sizeLabel)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .navigationTitle("All Attachments")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+    }
 }
 

@@ -13,7 +13,9 @@ final class KeychainManager {
     static let shared = KeychainManager()
     private let tokenKey = "com.torciemail.authToken"
     
-    private init() {}
+    private init() {
+        // Intentionally empty: enforces singleton usage via `shared`.
+    }
     
     /// Salva il token JWT nel keychain sovrascrivendo eventuale valore precedente.
     func saveToken(_ token: String) {

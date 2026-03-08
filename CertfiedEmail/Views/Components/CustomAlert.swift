@@ -33,7 +33,9 @@ struct CustomAlert: View {
         ZStack {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .onTapGesture { }
+                .onTapGesture {
+                    // Intentionally empty: absorb taps to avoid dismissing by background touch.
+                }
             
             VStack(spacing: 20) {
                 Text(title)

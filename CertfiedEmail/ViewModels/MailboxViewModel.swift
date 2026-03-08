@@ -143,6 +143,23 @@ final class MailboxViewModel: ObservableObject {
         }
     }
     
+    /// Esporta contenuti testuali in un file locale nella cartella Documents.
+    /// - Parameters:
+    ///   - content: Testo da salvare.
+    ///   - fileName: Nome file suggerito.
+    /// - Returns: URL locale del file salvato.
+    func exportTextFile(content: String, fileName: String) throws -> URL {
+        guard let data = content.data(using: .utf8) else {
+            throw RepositoryError.invalidData
+        }
+        
+        do {
+            return try fileStorage.saveToDocuments(data: data, fileName: fileName)
+        } catch {
+            throw RepositoryError.unknown
+        }
+    }
+    
     /// Normalizza e decodifica payload base64 eterogenei (standard/url-safe/data-uri).
     /// - Parameter value: Stringa base64 grezza.
     /// - Returns: `Data` decodificato o `nil` se non valido.

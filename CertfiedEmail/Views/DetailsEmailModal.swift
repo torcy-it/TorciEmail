@@ -11,6 +11,10 @@ import SwiftUI
 struct DetailsEmailModal: View {
     @Binding var showDetailsModal: Bool
     let email: EmailItem
+    @EnvironmentObject var mailVm: MailboxViewModel
+    @State private var shareItems: [URL] = []
+    @State private var showShareSheet = false
+    @State private var exportError: String?
     
     /// Mostra il dettaglio esteso della email selezionata.
     var body: some View {
@@ -143,13 +147,23 @@ struct DetailsEmailModal: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { } label: {
+                    Button {
+                        exportDetailsPayload()
+                    } label: {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 16, weight: .semibold))
                     }
                 }
             }
             .toolbarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(items: shareItems)
+            }
+            .alert("Error", isPresented: .constant(exportError != nil)) {
+                Button("OK") { exportError = nil }
+            } message: {
+                Text(exportError ?? "")
+            }
         }
     }
     
@@ -173,6 +187,38 @@ struct DetailsEmailModal: View {
         formatter.allowedUnits = [.useKB, .useMB]
         formatter.countStyle = .file
         return formatter.string(fromByteCount: Int64(bytes))
+    }
+    
+    /// Esporta un riepilogo testuale dei dettagli email e apre la share sheet.
+    private func exportDetailsPayload() {
+        let content = """
+        Email ID: \(email.id)
+        Date: \(email.date)
+        Status: \(email.status.title)
+        
+        Issuer: \(email.issuer.formatted)
+        Sender: \(email.sender.formatted)
+        Recipient: \(email.recipient.formatted)
+        Carbon Copy: \(email.carbonCopy.formatted)
+        
+        Subject: \(email.emailObject)
+        
+        Body:
+        \(email.bodyPlainText)
+        """
+        
+        let safeId = email.id.replacingOccurrences(of: "/", with: "-")
+        let fileName = "email-details-\(safeId).txt"
+        
+        do {
+            let url = try mailVm.exportTextFile(content: content, fileName: fileName)
+            shareItems = [url]
+            showShareSheet = true
+        } catch let error as RepositoryError {
+            exportError = error.errorDescription
+        } catch {
+            exportError = "Error while exporting details"
+        }
     }
 }
 
