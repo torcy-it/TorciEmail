@@ -12,6 +12,7 @@ import Security
 final class KeychainManager {
     static let shared = KeychainManager()
     private let tokenKey = "com.torciemail.authToken"
+    private let service = Bundle.main.bundleIdentifier ?? "com.torciemail.app"
     
     private init() {
         // Intentionally empty: enforces singleton usage via `shared`.
@@ -23,13 +24,20 @@ final class KeychainManager {
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: tokenKey,
+            // Stronger protection: readable only when the device is unlocked,
+            // and never migrates to another device via backup restore.
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
             kSecValueData as String: data
         ]
         
         SecItemDelete(query as CFDictionary)
         
-        _ = SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status != errSecSuccess {
+            assertionFailure("Failed to save token in Keychain. Status: \(status)")
+        }
     }
     
     /// Legge il token JWT dal keychain.
@@ -37,8 +45,10 @@ final class KeychainManager {
     func getToken() -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: tokenKey,
-            kSecReturnData as String: true
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         
         var result: AnyObject?
@@ -57,6 +67,7 @@ final class KeychainManager {
     func deleteToken() {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: tokenKey
         ]
         
